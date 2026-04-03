@@ -1,4 +1,4 @@
-package com.example.flutter_deploy_test
+package com.example.delivery_app
 
 import io.flutter.embedding.android.FlutterActivity
 

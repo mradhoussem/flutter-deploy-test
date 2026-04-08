@@ -2,8 +2,6 @@ import 'package:delivery_app/tools/default_colors.dart';
 import 'package:delivery_app/tools/images_files.dart';
 import 'package:flutter/material.dart';
 
-import '../login/login_page.dart';
-
 class InitPage extends StatefulWidget {
   const InitPage({super.key});
 
@@ -21,16 +19,17 @@ class _InitPageState extends State<InitPage>
   void initState() {
     super.initState();
 
-    // 1 second per pulse (up & down), 2 pulses total = 2 seconds
+    // 1. Setup the animation (800ms for a snappier pulse)
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 1),
+      duration: const Duration(milliseconds: 800),
     );
 
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.5)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.4).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
 
-    // Listen to animation status to count pulses
+    // 2. Logic to handle the pulses and navigation
     _controller.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         _controller.reverse();
@@ -39,15 +38,16 @@ class _InitPageState extends State<InitPage>
         if (_pulseCount < 2) {
           _controller.forward();
         } else {
-          // Navigate after 2 pulses
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const LoginPage()),
-          );
+          // --- NAVIGATION ---
+          // Use pushReplacementNamed to match your main.dart routes
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/login');
+          }
         }
       }
     });
 
-    // Start first pulse
+    // Start the first pulse
     _controller.forward();
   }
 
@@ -60,7 +60,8 @@ class _InitPageState extends State<InitPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DefaultColors.primary.withValues(alpha: 0.8),
+      // Using withOpacity for broader Flutter version support
+      backgroundColor: DefaultColors.primary.withOpacity(0.8),
       body: Center(
         child: AnimatedBuilder(
           animation: _scaleAnimation,
@@ -72,7 +73,7 @@ class _InitPageState extends State<InitPage>
           },
           child: Image.asset(
             ImagesFiles.logo,
-            width: 100,
+            width: 120, // Slightly larger for the splash screen
           ),
         ),
       ),

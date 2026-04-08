@@ -37,6 +37,8 @@ dependencies:
   firebase_core: ^4.6.0
   cloud_firestore: ^6.2.0
   gif_view: ^1.0.3
+  crypto: ^3.0.7
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:

@@ -8,7 +8,7 @@ class DefaultColors {
   static const Color secondary = Color(0xFFFFC107); // Amber
 
   // Accent color: for interactive elements
-  static const Color accent = Color(0xFF03A9F4); // Light Blue
+  static const Color accent = Color(0xFF4C96B8); // Light Blue
 
   // Background colors
   static const Color background = Colors.white;

@@ -1,7 +1,6 @@
 import 'package:delivery_app/dialogs/rd_print_save_package.dart';
 import 'package:delivery_app/firestore/models/m_package.dart';
 import 'package:delivery_app/tools/default_colors.dart';
-import 'package:delivery_app/tools/pdf_package.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 

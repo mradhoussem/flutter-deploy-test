@@ -2,7 +2,7 @@ import 'package:delivery_app/dialogs/rd_print_save_package.dart';
 import 'package:delivery_app/firestore/enums/e_packages_status.dart';
 import 'package:delivery_app/firestore/models/m_package.dart';
 import 'package:delivery_app/tools/default_colors.dart';
-import 'package:delivery_app/views/user_views/packageDetailsPage.dart';
+import 'package:delivery_app/views/user_views/package_details_page.dart';
 import 'package:flutter/material.dart';
 
 class PackageItemCard extends StatelessWidget {
@@ -86,7 +86,7 @@ class PackageItemCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: DefaultColors.primary.withOpacity(0.1),
+        color: DefaultColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(

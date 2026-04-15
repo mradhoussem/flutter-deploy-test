@@ -13,6 +13,9 @@ class DefaultColors {
   // Background colors
   static const Color background = Color(0xFFF0F2F5);
 
+  static const Color pagesBackground = Colors.white;
+
+
   // Text colors
   static const Color textPrimary = Color(0xFF212121); // Dark Grey
   static const Color textSecondary = Color(0xFF757575); // Grey

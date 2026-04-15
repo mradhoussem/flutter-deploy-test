@@ -20,7 +20,7 @@ class RwDropdown extends StatelessWidget {
   final String? value;
   final List<String> items;
   final ValueChanged<String?> onChanged;
-  final String Function(String)? itemLabelBuilder; // Pour transformer le nom technique en label
+  final String Function(String)? itemLabelBuilder;
   final String? hint;
   final String? label;
   final IconData? prefixIcon;
@@ -32,7 +32,6 @@ class RwDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Sécurité pour éviter le crash si la valeur n'est pas dans la liste
     final String? safeValue = items.contains(value) ? value : null;
 
     return Column(
@@ -41,7 +40,10 @@ class RwDropdown extends StatelessWidget {
         if (label != null) ...[
           Text(
             label!,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 8),
         ],
@@ -52,14 +54,37 @@ class RwDropdown extends StatelessWidget {
           onChanged: onChanged,
           icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
           dropdownColor: backgroundColor,
-          style: const TextStyle(color: Colors.black87, fontSize: 16),
+          style: const TextStyle(
+            color: Colors.black87,
+            fontSize: 16,
+            height: 1.2, // ⭐ fixes vertical text alignment
+          ),
           decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+            isDense: true, // ⭐ important fix
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 14,
+            ),
+
             hintText: hint,
             hintStyle: const TextStyle(color: Colors.grey),
+
             prefixIcon: prefixIcon != null
-                ? Icon(prefixIcon, size: 18, color: iconColor)
+                ? Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Icon(
+                prefixIcon,
+                size: 18,
+                color: iconColor,
+              ),
+            )
                 : null,
+
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 40,
+              minHeight: 40,
+            ),
+
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: bordercolor, width: 1),
@@ -79,7 +104,11 @@ class RwDropdown extends StatelessWidget {
           items: items.map((String item) {
             return DropdownMenuItem<String>(
               value: item,
-              child: Text(itemLabelBuilder != null ? itemLabelBuilder!(item) : item),
+              child: Text(
+                itemLabelBuilder != null
+                    ? itemLabelBuilder!(item)
+                    : item,
+              ),
             );
           }).toList(),
         ),

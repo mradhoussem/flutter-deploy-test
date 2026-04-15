@@ -1,69 +1,63 @@
 import 'package:delivery_app/firestore/models/m_package.dart';
 import 'package:delivery_app/tools/default_colors.dart';
-import 'package:delivery_app/tools/pdf_package.dart';
+import 'package:delivery_app/tools/pdf_waiting_packages.dart';
 import 'package:flutter/material.dart';
 
-class RdPrintSavePackage {
+class RdPrintSaveWaitingPackages {
   static Future<void> show(
-    BuildContext context,
-    PackageModel package, {
-    bool doublePopNavigation = false,
-    bool? isAddingPackage = false,
-    bool? isDismissible = true,
-  }) {
+      BuildContext context,
+      List<PackageModel> packages, {
+        bool isDismissible = true,
+      }) {
     return showDialog(
       context: context,
-      barrierDismissible: isDismissible!,
+      barrierDismissible: isDismissible,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
         contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-        title: isAddingPackage!
-            ? Column(
-                children: [
-                  const Icon(
-                    Icons.check_circle_outline_rounded,
-                    color: Colors.green,
-                    size: 70,
-                  ),
-                  const SizedBox(height: 15),
-                  const Text(
-                    "Succès !",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 22,
-                      color: DefaultColors.textPrimary,
-                    ),
-                  ),
-                ],
-              )
-            : null,
-        content: isAddingPackage
-            ? const Text(
-                "Le colis a été ajouté avec succès. Souhaitez-vous imprimer l'étiquette maintenant ?",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: DefaultColors.textPrimary, height: 1.4),
-              )
-            : null,
+        title: Column(
+          children: const [
+            Icon(
+              Icons.pending_actions,
+              color: DefaultColors.primary,
+              size: 70,
+            ),
+            SizedBox(height: 15),
+            Text(
+              "Colis en attente",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+                color: DefaultColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          "Vous avez ${packages.length} colis en attente.\nSouhaitez-vous imprimer ou sauvegarder la liste ?",
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: DefaultColors.textPrimary,
+            height: 1.4,
+          ),
+        ),
         actionsPadding: const EdgeInsets.all(20),
         actionsAlignment: MainAxisAlignment.center,
         actions: [
           Column(
             children: [
-              // --- Main Action: Print ---
+              // PRINT BUTTON
               SizedBox(
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton.icon(
                   onPressed: () async {
-                    await PdfPackage.generateAndPrint(package);
-                    if (ctx.mounted) {
-                      Navigator.pop(ctx); // Always close dialog
-                      if (doublePopNavigation) {
-                        Navigator.pop(context); // Optional pop
-                      }
-                    }
+                    await PdfWaitingPackages.printList(packages);
+                    if (ctx.mounted) Navigator.pop(ctx);
                   },
-                  icon: const Icon(Icons.print, color: Colors.white, size: 20),
+                  icon: const Icon(Icons.print, color: Colors.white),
                   label: const Text(
                     "IMPRIMER",
                     style: TextStyle(
@@ -73,58 +67,47 @@ class RdPrintSavePackage {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: DefaultColors.primary,
-                    elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),
               ),
+
               const SizedBox(height: 10),
 
-              // --- Secondary Action: Save ---
+              // SAVE BUTTON
               SizedBox(
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton.icon(
                   onPressed: () async {
-                    await PdfPackage.saveAndPrint(package);
-                    if (ctx.mounted) {
-                      Navigator.pop(ctx); // Always close dialog
-                      if (doublePopNavigation) {
-                        Navigator.pop(context); // Optional pop
-                      }
-                    }
+                    await PdfWaitingPackages.saveList(packages);
+                    if (ctx.mounted) Navigator.pop(ctx);
                   },
-                  icon: const Icon(
-                    Icons.save_alt,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+                  icon: const Icon(Icons.save_alt, color: Colors.white),
                   label: const Text(
                     "ENREGISTRER PDF",
-                    style: TextStyle(color: DefaultColors.pagesBackground),
+                    style: TextStyle(
+                      color: Colors.white,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),
               ),
+
               const SizedBox(height: 15),
-              // --- Dismiss Action ---
+
+              // CANCEL
               TextButton(
-                onPressed: () {
-                  Navigator.pop(ctx); // Always close dialog
-                  if (doublePopNavigation) {
-                    Navigator.pop(context); // Optional pop
-                  }
-                },
+                onPressed: () => Navigator.pop(ctx),
                 child: Text(
-                  "PLUS TARD",
+                  "ANNULER",
                   style: TextStyle(
                     color: DefaultColors.textSecondary,
                     fontWeight: FontWeight.w600,

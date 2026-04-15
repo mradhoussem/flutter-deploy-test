@@ -2,21 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:delivery_app/tools/default_colors.dart';
 import 'package:delivery_app/views/user_views/add_package_page.dart';
 import 'package:delivery_app/views/user_views/packages_stats_page.dart';
-import 'package:delivery_app/firestore/enums/e_packages_status.dart';
 
 class DashboardUserPage extends StatelessWidget {
   final String userId;
   final String username;
-  final ValueNotifier<int> indexNotifier;
-  final ValueNotifier<EPackageStatus?> filterNotifier;
 
   const DashboardUserPage({
     super.key,
     required this.userId,
     required this.username,
-    required this.indexNotifier,
-    required this.filterNotifier,
   });
+
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +29,6 @@ class DashboardUserPage extends StatelessWidget {
           const SizedBox(height: 40),
           PackagesStatsPage(
             userId: userId,
-            indexNotifier: indexNotifier,
-            filterNotifier: filterNotifier,
           ),
           const SizedBox(height: 40),
         ],

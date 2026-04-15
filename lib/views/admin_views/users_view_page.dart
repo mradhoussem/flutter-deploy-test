@@ -19,7 +19,7 @@ class UsersViewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DefaultColors.background,
+      backgroundColor: DefaultColors.pagesBackground,
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: DefaultColors.primary,
         onPressed: () async {
@@ -181,7 +181,7 @@ class UsersViewPage extends StatelessWidget {
             _detailRow("Rôle:", user.role.toUpperCase()),
             const SizedBox(height: 10),
             Text(
-              "Créé le: ${user.createdAt?.toString().split(' ')[0] ?? 'N/A'}",
+              "Créé le: ${user.createdAt.toString().split(' ')[0]}",
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ],

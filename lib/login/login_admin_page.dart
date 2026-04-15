@@ -1,5 +1,4 @@
 import 'package:delivery_app/firestore/admin_db.dart';
-import 'package:delivery_app/init/loading_overlay.dart';
 import 'package:delivery_app/reusable_widgets/rw_textview.dart';
 import 'package:delivery_app/tools/default_colors.dart';
 import 'package:delivery_app/tools/images_files.dart';
@@ -52,8 +51,6 @@ class _LoginAdminPageState extends State<LoginAdminPage> {
         }
 
         if (mounted) {
-          LoadingOverlay.show(context);
-          await Future.delayed(const Duration(milliseconds: 1500));
           if (mounted) {
             Navigator.pop(context);
             Navigator.pushReplacementNamed(context, '/adminHome');
@@ -175,7 +172,7 @@ class _LoginAdminPageState extends State<LoginAdminPage> {
                                       child: Text(
                                         "SE CONNECTER",
                                         style: TextStyle(
-                                          color: Colors.white,
+                                          color: DefaultColors.pagesBackground,
                                           fontWeight: FontWeight.bold,
                                           letterSpacing: 1.5,
                                         ),

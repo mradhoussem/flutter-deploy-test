@@ -1,18 +1,7 @@
 import 'package:flutter/material.dart';
 
 class EmptyStateWidget extends StatelessWidget {
-  final String message;
-  final IconData icon;
-  final double iconSize;
-  final Color? iconColor;
-
-  const EmptyStateWidget({
-    super.key,
-    this.message = 'Aucun colis trouvé',
-    this.icon = Icons.inventory_2_outlined,
-    this.iconSize = 64,
-    this.iconColor,
-  });
+  const EmptyStateWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,15 +10,12 @@ class EmptyStateWidget extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            icon,
-            size: iconSize,
-            color: iconColor ?? Colors.grey[300],
+            Icons.inventory_2_outlined,
+            size: 64,
+            color: Colors.grey[300],
           ),
           const SizedBox(height: 16),
-          Text(
-            message,
-            style: const TextStyle(fontSize: 14),
-          ),
+          const Text('Aucun colis trouvé'),
         ],
       ),
     );

@@ -8,6 +8,8 @@ import 'package:delivery_app/reusable_widgets/rw_textview.dart';
 import 'package:delivery_app/tools/default_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+// 1. Import the refresh notifier
+import 'package:delivery_app/tools/refresh_notifier.dart';
 
 class AddPackagePage extends StatefulWidget {
   const AddPackagePage({super.key});
@@ -90,11 +92,16 @@ class _AddPackagePageState extends State<AddPackagePage> {
       final savedPackage = newPackage.copyWith(id: docRef.id);
 
       if (mounted) {
+        // 2. Trigger the global refresh event
+        RefreshNotifier().notifyRefresh();
+
         setState(() => _isLoading = false);
         RdPrintSavePackage.show(
           context,
           savedPackage,
           doublePopNavigation: true,
+          isAddingPackage: true,
+          isDismissible: false,
         );
       }
     } catch (e) {
@@ -110,7 +117,7 @@ class _AddPackagePageState extends State<AddPackagePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
+      backgroundColor: DefaultColors.pagesBackground,
       appBar: AppBar(
         title: const Text(
           'Nouvelle Expédition',
@@ -180,7 +187,7 @@ class _AddPackagePageState extends State<AddPackagePage> {
                 value: _selectedGov,
                 items: EGovernorate.values.map((e) => e.name).toList(),
                 itemLabelBuilder: (name) =>
-                    EGovernorateExtension.fromName(name).label,
+                EGovernorateExtension.fromName(name).label,
                 onChanged: (val) => setState(() => _selectedGov = val),
               ),
               const SizedBox(height: 15),
@@ -288,9 +295,9 @@ class _AddPackagePageState extends State<AddPackagePage> {
         child: _isLoading
             ? const CircularProgressIndicator(color: Colors.white)
             : const Text(
-                "CONFIRMER L'EXPÉDITION",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+          "CONFIRMER L'EXPÉDITION",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
       ),
     );
   }

@@ -39,7 +39,7 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DefaultColors.background,
+      backgroundColor: DefaultColors.pagesBackground,
       appBar: AppBar(title: Text("Modifier : ${widget.userName}"), backgroundColor: Colors.transparent, elevation: 0),
       body: Padding(
         padding: const EdgeInsets.all(30.0),
@@ -54,7 +54,7 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
                 child: Container(
                   width: double.infinity, height: 55,
                   decoration: BoxDecoration(borderRadius: BorderRadius.circular(15), color: DefaultColors.primary, boxShadow: [BoxShadow(color: DefaultColors.primary.withValues(alpha: 0.3), offset: const Offset(0, 5), blurRadius: 10)]),
-                  child: Center(child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("METTRE À JOUR", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+                  child: Center(child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("METTRE À JOUR", style: TextStyle(color: DefaultColors.pagesBackground, fontWeight: FontWeight.bold))),
                 ),
               ),
             ],

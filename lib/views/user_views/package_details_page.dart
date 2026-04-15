@@ -13,7 +13,7 @@ class PackageDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: DefaultColors.pagesBackground,
       appBar: AppBar(
         title: const Text("Détails du Colis"),
         elevation: 0,
@@ -90,7 +90,7 @@ class PackageDetailsPage extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE0E0E0), width: 0.5),
+            border: Border.all(color: DefaultColors.primary, width: 0.5),
           ),
           child: Column(children: children),
         ),

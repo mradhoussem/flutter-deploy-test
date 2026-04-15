@@ -1,14 +1,18 @@
+import 'package:delivery_app/reusable_widgets/rw_sidebar_item.dart';
 import 'package:flutter/material.dart';
 
 class RwSideBar extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onItemSelected;
   final VoidCallback onLogout;
+
   final Color primaryColor;
   final Color backgroundColor;
   final Color unselectedColor;
-  final String
-  portalTitle; // Paramètre pour changer "USER PORTAL" en "ADMIN PORTAL"
+
+  final String portalTitle;
+
+  final List<RwSideBarItem> items;
 
   const RwSideBar({
     super.key,
@@ -17,6 +21,7 @@ class RwSideBar extends StatelessWidget {
     required this.onLogout,
     required this.primaryColor,
     required this.backgroundColor,
+    required this.items,
     this.unselectedColor = Colors.grey,
     this.portalTitle = "USER PORTAL",
   });
@@ -30,6 +35,7 @@ class RwSideBar extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 60),
+
           Text(
             portalTitle,
             style: TextStyle(
@@ -39,9 +45,13 @@ class RwSideBar extends StatelessWidget {
               letterSpacing: 1.2,
             ),
           ),
+
           const SizedBox(height: 40),
+
           _buildNavItems(context),
+
           const Spacer(),
+
           _buildLogoutButton(),
           const SizedBox(height: 20),
         ],
@@ -50,24 +60,20 @@ class RwSideBar extends StatelessWidget {
   }
 
   Widget _buildNavItems(BuildContext context) {
-    final List<Map<String, dynamic>> items = [
-      {"title": "Accueil", "icon": Icons.dashboard_rounded},
-      {"title": "Mes Colis", "icon": Icons.inventory_2_rounded},
-      {"title": "Paramètres", "icon": Icons.settings_rounded},
-    ];
-
     return Column(
       children: List.generate(items.length, (index) {
-        final bool isSelected = selectedIndex == index;
+        final item = items[index];
+        final isSelected = selectedIndex == index;
+
         return _SidebarItem(
-          title: items[index]["title"],
-          icon: items[index]["icon"],
+          title: item.title,
+          icon: item.icon,
           isSelected: isSelected,
           primaryColor: primaryColor,
           unselectedColor: unselectedColor,
           onTap: () {
             onItemSelected(index);
-            // Ferme le drawer automatiquement si on est sur mobile
+
             if (MediaQuery.of(context).size.width <= 900) {
               Navigator.pop(context);
             }
@@ -80,10 +86,16 @@ class RwSideBar extends StatelessWidget {
   Widget _buildLogoutButton() {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 30),
-      leading: Icon(Icons.logout, color: primaryColor.withValues(alpha: 0.7)),
+      leading: Icon(
+        Icons.logout,
+        color: primaryColor.withValues(alpha: 0.7),
+      ),
       title: Text(
         "Déconnexion",
-        style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: primaryColor,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       onTap: onLogout,
     );
@@ -116,7 +128,10 @@ class _SidebarItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 15),
+          padding: const EdgeInsets.symmetric(
+            vertical: 12,
+            horizontal: 15,
+          ),
           decoration: BoxDecoration(
             color: isSelected
                 ? primaryColor.withValues(alpha: 0.1)
@@ -125,13 +140,17 @@ class _SidebarItem extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(icon, color: isSelected ? primaryColor : unselectedColor),
+              Icon(
+                icon,
+                color: isSelected ? primaryColor : unselectedColor,
+              ),
               const SizedBox(width: 15),
               Text(
                 title,
                 style: TextStyle(
                   color: isSelected ? primaryColor : unselectedColor,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  fontWeight:
+                  isSelected ? FontWeight.bold : FontWeight.w500,
                 ),
               ),
             ],

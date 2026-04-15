@@ -7,15 +7,18 @@ class RdPrintSavePackage {
   static Future<void> show(
       BuildContext context,
       PackageModel package, {
-        bool doublePopNavigation = false, // Added param with default true
+        bool doublePopNavigation = false,
+        bool isAddingPackage = false,
+        bool isDismissible = true,
       }) {
     return showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: isDismissible,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-        title: Column(
+        title: isAddingPackage
+            ? Column(
           children: [
             const Icon(
               Icons.check_circle_outline_rounded,
@@ -25,21 +28,27 @@ class RdPrintSavePackage {
             const SizedBox(height: 15),
             const Text(
               "Succès !",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+                color: DefaultColors.textPrimary,
+              ),
             ),
           ],
-        ),
-        content: const Text(
+        )
+            : null,
+        content: isAddingPackage
+            ? const Text(
           "Le colis a été ajouté avec succès. Souhaitez-vous imprimer l'étiquette maintenant ?",
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.black54, height: 1.4),
-        ),
+          style: TextStyle(color: DefaultColors.textPrimary, height: 1.4),
+        )
+            : null,
         actionsPadding: const EdgeInsets.all(20),
         actionsAlignment: MainAxisAlignment.center,
         actions: [
           Column(
             children: [
-              // --- Main Action: Print ---
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -47,30 +56,23 @@ class RdPrintSavePackage {
                   onPressed: () async {
                     await PdfPackage.generateAndPrint(package);
                     if (ctx.mounted) {
-                      Navigator.pop(ctx); // Always close dialog
-                      if (doublePopNavigation) Navigator.pop(context); // Optional pop
+                      Navigator.pop(ctx);
+                      if (doublePopNavigation) Navigator.pop(context);
                     }
                   },
                   icon: const Icon(Icons.print, color: Colors.white, size: 20),
                   label: const Text(
                     "IMPRIMER",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: DefaultColors.primary,
                     elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),
               const SizedBox(height: 10),
-
-              // --- Secondary Action: Save ---
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -78,41 +80,31 @@ class RdPrintSavePackage {
                   onPressed: () async {
                     await PdfPackage.saveAndPrint(package);
                     if (ctx.mounted) {
-                      Navigator.pop(ctx); // Always close dialog
-                      if (doublePopNavigation) Navigator.pop(context); // Optional pop
+                      Navigator.pop(ctx);
+                      if (doublePopNavigation) Navigator.pop(context);
                     }
                   },
-                  icon: const Icon(
-                    Icons.save_alt,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+                  icon: const Icon(Icons.save_alt, color: Colors.white, size: 20),
                   label: const Text(
                     "ENREGISTRER PDF",
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
               ),
               const SizedBox(height: 15),
-              // --- Dismiss Action ---
               TextButton(
                 onPressed: () {
-                  Navigator.pop(ctx); // Always close dialog
-                  if (doublePopNavigation) Navigator.pop(context); // Optional pop
+                  Navigator.pop(ctx);
+                  if (doublePopNavigation) Navigator.pop(context);
                 },
-                child: Text(
+                child: const Text(
                   "PLUS TARD",
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
                 ),
               ),
             ],

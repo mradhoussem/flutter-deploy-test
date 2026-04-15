@@ -20,9 +20,9 @@ class _AddUserPageState extends State<AddUserPage> {
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _phone1Controller = TextEditingController();
   final TextEditingController _phone2Controller = TextEditingController();
+  final TextEditingController _deliveryCostsController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
   bool _isLoading = false;
 
@@ -33,11 +33,11 @@ class _AddUserPageState extends State<AddUserPage> {
     _lastNameController.dispose();
     _phone1Controller.dispose();
     _phone2Controller.dispose();
+    _deliveryCostsController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
-
 
   Future<void> _saveUser() async {
     if (!_formKey.currentState!.validate()) return;
@@ -57,13 +57,13 @@ class _AddUserPageState extends State<AddUserPage> {
       // Create Model Instance
       final newUser = UserModel(
         id: '',
-        // Firestore generates this
         username: username,
-        firstName: _firstNameController.text,
-        lastName: _lastNameController.text,
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
         phone1: _phone1Controller.text.trim(),
         phone2: _phone2Controller.text.trim(),
         role: 'user',
+        deliveryCosts: double.tryParse(_deliveryCostsController.text.replaceAll(',', '.')) ?? 0.0,
         createdAt: DateTime.now(),
       );
 
@@ -71,29 +71,26 @@ class _AddUserPageState extends State<AddUserPage> {
       await _userRepo.addUser(newUser, _passwordController.text);
 
       if (mounted) {
-        _showSnackBar("Utilisateur ajouté !", Colors.green);
-        Navigator.pop(context, true); // Return true to trigger refresh
+        _showSnackBar("Utilisateur ajouté !", DefaultColors.success);
+        Navigator.pop(context, true);
       }
     } catch (e) {
-      _showSnackBar("Erreur: $e", Colors.red);
+      _showSnackBar("Erreur: $e", DefaultColors.error);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showSnackBar(String msg, Color col) => ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: col));
+  void _showSnackBar(String msg, Color col) => ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(msg), backgroundColor: col),
+  );
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
+      backgroundColor: DefaultColors.pagesBackground,
       appBar: AppBar(
-        title: const Text(
-          "Nouveau Profil",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text("Nouveau Profil", style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: Colors.black,
@@ -107,9 +104,9 @@ class _AddUserPageState extends State<AddUserPage> {
             children: [
               const Text(
                 "Informations de Connexion",
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+                style: TextStyle(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 25),
+              const SizedBox(height: 20),
 
               RwTextview(
                 controller: _nameController,
@@ -119,22 +116,32 @@ class _AddUserPageState extends State<AddUserPage> {
                 validator: (v) => v!.isEmpty ? "Requis" : null,
               ),
               const SizedBox(height: 15),
-              RwTextview(
-                controller: _firstNameController,
-                hint: "Prénom",
-                prefixIcon: Icons.person_outline,
-                iconColor: DefaultColors.primary,
-                validator: (v) => v!.isEmpty ? "Requis" : null,
+
+              Row(
+                children: [
+                  Expanded(
+                    child: RwTextview(
+                      controller: _firstNameController,
+                      hint: "Prénom",
+                      prefixIcon: Icons.person_outline,
+                      iconColor: DefaultColors.primary,
+                      validator: (v) => v!.isEmpty ? "Requis" : null,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: RwTextview(
+                      controller: _lastNameController,
+                      hint: "Nom",
+                      prefixIcon: Icons.person,
+                      iconColor: DefaultColors.primary,
+                      validator: (v) => v!.isEmpty ? "Requis" : null,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 15),
-              RwTextview(
-                controller: _lastNameController,
-                hint: "Nom",
-                prefixIcon: Icons.person,
-                iconColor: DefaultColors.primary,
-                validator: (v) => v!.isEmpty ? "Requis" : null,
-              ),
-              const SizedBox(height: 15),
+
               RwTextview(
                 controller: _phone1Controller,
                 hint: "Téléphone 1",
@@ -154,21 +161,32 @@ class _AddUserPageState extends State<AddUserPage> {
               ),
               const SizedBox(height: 15),
 
+              // --- DELIVERY COSTS FIELD ---
+              RwTextview(
+                controller: _deliveryCostsController,
+                hint: "Frais de livraison par colis (TND)",
+                textDouble: true,
+                prefixIcon: Icons.local_shipping_outlined,
+                iconColor: DefaultColors.primary,
+                validator: (v) => v!.isEmpty ? "Requis" : null,
+              ),
+              const SizedBox(height: 15),
+
               RwTextview(
                 controller: _passwordController,
                 hint: "Mot de passe",
                 isPassword: true,
                 iconColor: DefaultColors.primary,
+                validator: (v) => v!.length < 6 ? "Minimum 6 caractères" : null,
               ),
               const SizedBox(height: 15),
 
               RwTextview(
                 controller: _confirmPasswordController,
-                hint: "Confirmer",
+                hint: "Confirmer le mot de passe",
                 isPassword: true,
                 iconColor: DefaultColors.primary,
-                validator: (v) =>
-                    v != _passwordController.text ? "Incohérent" : null,
+                validator: (v) => v != _passwordController.text ? "Incohérent" : null,
               ),
 
               const SizedBox(height: 40),
@@ -182,15 +200,15 @@ class _AddUserPageState extends State<AddUserPage> {
                     borderRadius: BorderRadius.circular(20),
                     gradient: LinearGradient(
                       colors: [
-                        DefaultColors.primary.withValues(alpha: 0.7),
+                        DefaultColors.primary.withOpacity(0.7),
                         DefaultColors.primary,
                       ],
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: DefaultColors.primary.withValues(alpha: 0.4),
-                        offset: const Offset(6, 6),
-                        blurRadius: 20,
+                        color: DefaultColors.primary.withOpacity(0.3),
+                        offset: const Offset(0, 8),
+                        blurRadius: 15,
                       ),
                     ],
                   ),
@@ -198,13 +216,13 @@ class _AddUserPageState extends State<AddUserPage> {
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
-                            "ENREGISTRER",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
+                      "ENREGISTRER LE PROFIL",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
                   ),
                 ),
               ),

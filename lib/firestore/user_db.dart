@@ -6,14 +6,11 @@ import 'package:delivery_app/firestore/models/m_user.dart';
 class UserDB {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  /// Private helper to ensure hashing is identical for both adding and logging in
   String _hashPassword(String password) {
     var bytes = utf8.encode(password);
     return sha256.convert(bytes).toString();
   }
 
-  /// Handles User Authentication
-  /// UI sends raw password -> we hash it here -> we compare with DB
   Future<UserModel?> loginUser({
     required String username,
     required String password,
@@ -28,26 +25,27 @@ class UserDB {
         .get();
 
     if (query.docs.isNotEmpty) {
-      return UserModel.fromFirestore(query.docs.first);
+      return UserModel.fromMap(
+        query.docs.first.data(),
+        id: query.docs.first.id,
+      );
     }
     return null;
   }
 
-  /// Fetches all users for the Admin panel
   Future<List<UserModel>> getAllUsers() async {
     final snapshot = await _db.collection('users').get();
-    return snapshot.docs.map((doc) => UserModel.fromFirestore(doc)).toList();
+    return snapshot.docs
+        .map((doc) => UserModel.fromMap(doc.data(), id: doc.id))
+        .toList();
   }
 
-  /// Adds a new user with automatic hashing
-  /// UI sends raw password -> we hash it here -> we save to Firestore
   Future<void> addUser(UserModel user, String rawPassword) async {
     Map<String, dynamic> data = user.toMap();
     data['password'] = _hashPassword(rawPassword);
     await _db.collection('users').add(data);
   }
 
-  /// Updates an existing user's password
   Future<void> updatePassword(String userId, String newRawPassword) async {
     final String hashedNewPassword = _hashPassword(newRawPassword);
     await _db.collection('users').doc(userId).update({
@@ -55,7 +53,6 @@ class UserDB {
     });
   }
 
-  /// Validates if a username is already taken
   Future<bool> checkUsernameExists(String username) async {
     final query = await _db
         .collection('users')

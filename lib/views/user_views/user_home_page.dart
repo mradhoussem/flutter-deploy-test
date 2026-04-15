@@ -1,3 +1,7 @@
+import 'package:delivery_app/reusable_widgets/rw_sidebar_item.dart';
+import 'package:delivery_app/views/user_views/packages_payed_list_page.dart';
+import 'package:delivery_app/views/user_views/packages_recieved_list_page.dart';
+import 'package:delivery_app/views/user_views/packages_waiting_list_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:delivery_app/tools/default_colors.dart';
@@ -5,7 +9,6 @@ import 'package:delivery_app/reusable_widgets/rw_appbar.dart';
 import 'package:delivery_app/reusable_widgets/rw_sidebar.dart';
 import 'package:delivery_app/views/user_views/dashboard_user_page.dart';
 import 'package:delivery_app/views/user_views/packages_list_page.dart';
-import 'package:delivery_app/firestore/enums/e_packages_status.dart';
 
 class UserHomePage extends StatefulWidget {
   const UserHomePage({super.key});
@@ -15,26 +18,22 @@ class UserHomePage extends StatefulWidget {
 }
 
 class _UserHomePageState extends State<UserHomePage> {
-  // Notifiers that will be passed down to children
-  final ValueNotifier<int> _indexNotifier = ValueNotifier<int>(0);
-  final ValueNotifier<EPackageStatus?> _filterNotifier = ValueNotifier<EPackageStatus?>(null);
-
-  bool _isSidebarOpen = true;
+  int _selectedIndex = 0;
   String _username = "Utilisateur";
   String? _userid;
+  bool _isSidebarOpen = true;
+
+  // NEW: Track which indices have been visited
+  late List<bool> _activatedPages;
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
+    // Initialize with first page active, others false
+    _activatedPages = List.generate(6, (index) => index == 0);
     _loadUserInfo();
-  }
-
-  @override
-  void dispose() {
-    _indexNotifier.dispose();
-    _filterNotifier.dispose();
-    super.dispose();
   }
 
   Future<void> _loadUserInfo() async {
@@ -51,17 +50,55 @@ class _UserHomePageState extends State<UserHomePage> {
     if (mounted) Navigator.pushReplacementNamed(context, '/login');
   }
 
+  List<RwSideBarItem> _buildItems() {
+    if (_userid == null) return [];
+
+    return [
+      RwSideBarItem(
+        title: "Dashboard",
+        icon: Icons.dashboard,
+        page: DashboardUserPage(userId: _userid!, username: _username),
+      ),
+      RwSideBarItem(
+        title: "Mes Colis",
+        icon: Icons.inventory_2,
+        page: PackagesListPage(userId: _userid!),
+      ),
+      RwSideBarItem(
+        title: "Colis en attente",
+        icon: Icons.pending_actions,
+        page: PackagesWaitingListPage(userId: _userid!),
+      ),
+      RwSideBarItem(
+        title: "Mes paiements",
+        icon: Icons.monetization_on,
+        page: PackagesPayedListPage(userId: _userid!),
+      ),
+      RwSideBarItem(
+        title: "Mes retours",
+        icon: Icons.monetization_on,
+        page: PackagesReceivedListPage(userId: _userid!),
+      ),
+      RwSideBarItem(
+        title: "Paramètres",
+        icon: Icons.settings,
+        page: const Center(child: Text("Paramètres")),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isWeb = MediaQuery.of(context).size.width > 900;
+    final items = _buildItems();
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: Colors.white,
-      drawer: isWeb ? null : _buildSidebar(false),
+      backgroundColor: DefaultColors.pagesBackground,
+      drawer: isWeb ? null : _buildSidebar(items),
       body: Row(
         children: [
-          if (isWeb && _isSidebarOpen) _buildSidebar(true),
+          if (isWeb && _isSidebarOpen) _buildSidebar(items),
           Expanded(
             child: Column(
               children: [
@@ -77,33 +114,17 @@ class _UserHomePageState extends State<UserHomePage> {
                   },
                 ),
                 Expanded(
-                  // ValueListenableBuilder listens to index changes to switch pages
-                  child: ValueListenableBuilder<int>(
-                    valueListenable: _indexNotifier,
-                    builder: (context, selectedIndex, _) {
-                      return IndexedStack(
-                        index: selectedIndex,
-                        children: [
-                          _userid != null
-                              ? DashboardUserPage(
-                            userId: _userid!,
-                            username: _username,
-                            indexNotifier: _indexNotifier,
-                            filterNotifier: _filterNotifier,
-                          )
-                              : const Center(child: Text("Chargement...")),
-                          _userid != null
-                              ? PackagesListPage(
-                            userId: _userid!,
-                            // We'll pass the notifier so the list reacts to changes
-                            filterNotifier: _filterNotifier,
-                          )
-                              : const Center(child: Text("Chargement...")),
-                          const Center(child: Text("Paramètres")),
-                        ],
-                      );
-                    },
-                  ),
+                  child: _userid == null
+                      ? const Center(child: CircularProgressIndicator())
+                      : IndexedStack(
+                          index: _selectedIndex,
+                          // Only show the real page if it has been activated, otherwise show empty
+                          children: items.asMap().entries.map((entry) {
+                            return _activatedPages[entry.key]
+                                ? entry.value.page
+                                : const SizedBox.shrink();
+                          }).toList(),
+                        ),
                 ),
               ],
             ),
@@ -113,18 +134,20 @@ class _UserHomePageState extends State<UserHomePage> {
     );
   }
 
-  Widget _buildSidebar(bool isFixed) {
-    return ValueListenableBuilder<int>(
-      valueListenable: _indexNotifier,
-      builder: (context, index, _) {
-        return RwSideBar(
-          selectedIndex: index,
-          primaryColor: DefaultColors.primary,
-          backgroundColor: Colors.white,
-          onItemSelected: (i) => _indexNotifier.value = i,
-          onLogout: _handleLogout,
-        );
+  Widget _buildSidebar(List<RwSideBarItem> items) {
+    return RwSideBar(
+      selectedIndex: _selectedIndex,
+      items: items,
+      primaryColor: DefaultColors.primary,
+      backgroundColor: Colors.white,
+      portalTitle: "USER PORTAL",
+      onItemSelected: (index) {
+        setState(() {
+          _selectedIndex = index;
+          _activatedPages[index] = true; // Activate the page when clicked
+        });
       },
+      onLogout: _handleLogout,
     );
   }
 }

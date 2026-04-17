@@ -15,10 +15,13 @@ class AdminScannerPage extends StatefulWidget {
 class _AdminScannerPageState extends State<AdminScannerPage> {
   final PackageDB _db = PackageDB();
   final MobileScannerController _controller = MobileScannerController(
-    detectionSpeed: DetectionSpeed.normal,
-    facing: CameraFacing.back, // Caméra arrière par défaut sur mobile
+    detectionSpeed: DetectionSpeed.noDuplicates,
+    facing: CameraFacing.back,
   );
+
   bool _isProcessing = false;
+  PackageModel? _scannedPackage;
+  EPackageStatus? _nextStatus;
 
   @override
   void dispose() {
@@ -28,194 +31,201 @@ class _AdminScannerPageState extends State<AdminScannerPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Calcul de la taille du viseur selon l'écran (Responsive)
     final size = MediaQuery.of(context).size;
-    final double scannerSize = size.width < 600 ? size.width * 0.8 : 500;
+    final double scannerSize = size.width < 600 ? size.width * 0.7 : 400;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Scan Colis"),
+        title: const Text("Scan Logistique"),
         backgroundColor: DefaultColors.primary,
         foregroundColor: Colors.white,
         actions: [
-          // Bouton pour changer de caméra ou allumer le flash (utile sur mobile)
-          /*IconButton(
-            icon: ValueListenableBuilder<TorchState>( // ✅ Spécifie le type
-              valueListenable: _controller.torchState,
-              builder: (context, state, child) {
-                switch (state) {
-                  case TorchState.off:
-                    return const Icon(Icons.flash_off, color: Colors.white);
-                  case TorchState.on:
-                    return const Icon(Icons.flash_on, color: Colors.yellow);
-                  default:
-                    return const Icon(Icons.flash_off, color: Colors.white);
-                }
-              },
-            ),
-            onPressed: () => _controller.toggleTorch(),
-          ),*/
           IconButton(
-            icon: const Icon(Icons.flip_camera_ios, color: Colors.white),
+            icon: const Icon(Icons.flip_camera_ios),
             onPressed: () => _controller.switchCamera(),
           ),
         ],
       ),
-      body: Stack(
+      body: Column(
         children: [
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+          // Section Scanner
+          Expanded(
+            flex: 2,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
+                MobileScanner(
+                  controller: _controller,
+                  onDetect: (capture) {
+                    final List<Barcode> barcodes = capture.barcodes;
+                    if (barcodes.isNotEmpty && !_isProcessing) {
+                      final String? code = barcodes.first.rawValue;
+                      if (code != null) _handleScan(code);
+                    }
+                  },
+                ),
+                // Overlay Viseur
                 Container(
                   width: scannerSize,
                   height: scannerSize,
                   decoration: BoxDecoration(
-                    border: Border.all(color: DefaultColors.primary, width: 3),
+                    border: Border.all(color: Colors.white, width: 2),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(13),
-                    child: MobileScanner(
-                      controller: _controller,
-                      onDetect: (capture) {
-                        final List<Barcode> barcodes = capture.barcodes;
-                        if (barcodes.isNotEmpty && !_isProcessing) {
-                          final String? code = barcodes.first.rawValue;
-                          if (code != null) _handleScan(code);
-                        }
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  "Placez le QR Code dans le cadre",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
               ],
             ),
           ),
-          if (_isProcessing)
-            Container(
-              color: Colors.black45,
-              child: const Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              ),
-            ),
+
+          // Section Détails en bas
+          _buildBottomDetailPanel(),
         ],
       ),
+    );
+  }
+
+  Widget _buildBottomDetailPanel() {
+    if (_scannedPackage == null) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        child: const Text("En attente de scan...",
+            style: TextStyle(color: Colors.grey)),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, spreadRadius: 2)],
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "${_scannedPackage!.firstName} ${_scannedPackage!.lastName}",
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  setState(() => _scannedPackage = null);
+                  _controller.start();
+                },
+              )
+            ],
+          ),
+          Text("📍 ${_scannedPackage!.governorate.name}"),
+          const SizedBox(height: 10),
+          const Divider(),
+          const SizedBox(height: 10),
+
+          // Affichage du changement de statut
+          Row(
+            children: [
+              _statusChip(_scannedPackage!.status, Colors.grey),
+              const Icon(Icons.arrow_forward, size: 16, color: Colors.blue),
+              _statusChip(_nextStatus!, Colors.blue),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: _isProcessing ? null : _confirmUpdate,
+              child: _isProcessing
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text("CONFIRMER LE CHANGEMENT",
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statusChip(EPackageStatus status, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color),
+      ),
+      child: Text(status.name.toUpperCase(),
+          style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.bold)),
     );
   }
 
   Future<void> _handleScan(String packageId) async {
-    setState(() => _isProcessing = true);
-    _controller.stop(); // Stop pour éviter les scans en boucle
+    _controller.stop();
 
     try {
       final package = await _db.getPackageById(packageId);
-
       if (package == null) {
-        _showSnackBar("Erreur: Colis introuvable ($packageId)", isError: true);
-        _resume();
+        _showSnackBar("Colis introuvable", isError: true);
+        _controller.start();
         return;
       }
 
-      _processLogic(package);
+      // Logique de flux demandée
+      EPackageStatus? next;
+      if (package.status == EPackageStatus.waiting) {
+        next = EPackageStatus.deposit; // enattente -> Audepot
+      } else if (package.status == EPackageStatus.deposit) {
+        next = EPackageStatus.progressing; // Audepot -> en cours
+      } else if (package.status == EPackageStatus.progressing) {
+        next = EPackageStatus.returnFromDeposit; // en cours -> retourDepot
+      } else if (package.status == EPackageStatus.returnFromDeposit) {
+        next = EPackageStatus.progressing; // retourDepot -> EnCours
+      }
+
+      if (next != null) {
+        setState(() {
+          _scannedPackage = package;
+          _nextStatus = next;
+        });
+      } else {
+        _showSnackBar("Statut actuel (${package.status.name}) non géré", isError: true);
+        _controller.start();
+      }
     } catch (e) {
-      _showSnackBar("Erreur de connexion", isError: true);
-      _resume();
+      _showSnackBar("Erreur technique", isError: true);
+      _controller.start();
     }
   }
 
-  void _processLogic(PackageModel package) {
-    EPackageStatus? nextStatus;
-    String title = "";
-
-    // Application stricte de votre flux
-    if (package.status == EPackageStatus.deposit) {
-      nextStatus = EPackageStatus.progressing;
-      title = "SORTIE DÉPÔT";
-    } else if (package.status == EPackageStatus.progressing) {
-      nextStatus = EPackageStatus.returnFromDeposit;
-      title = "RETOUR DÉPÔT";
-    } else if (package.status == EPackageStatus.returnFromDeposit) {
-      nextStatus = EPackageStatus.progressing;
-      title = "RÉEXPÉDITION";
+  Future<void> _confirmUpdate() async {
+    setState(() => _isProcessing = true);
+    try {
+      await _db.updateStatus(_scannedPackage!.id, _nextStatus!);
+      _showSnackBar("Statut mis à jour : ${_nextStatus!.name}");
+      setState(() {
+        _scannedPackage = null;
+        _isProcessing = false;
+      });
+      _controller.start();
+    } catch (e) {
+      _showSnackBar("Erreur lors de la mise à jour", isError: true);
+      setState(() => _isProcessing = false);
     }
-
-    if (nextStatus != null) {
-      _confirmDialog(package, nextStatus, title);
-    } else {
-      _showSnackBar(
-        "Aucune action pour ce statut (${package.status.name})",
-        isError: true,
-      );
-      _resume();
-    }
-  }
-
-  void _confirmDialog(PackageModel package, EPackageStatus next, String title) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Client: ${package.firstName} ${package.lastName}"),
-            Text("Destination: ${package.governorate.name}"),
-            const Divider(height: 20),
-            Text(
-              "Changer le statut vers : ${next.name.toUpperCase()} ?",
-              style: const TextStyle(
-                color: Colors.blue,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _resume();
-            },
-            child: const Text("ANNULER"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            onPressed: () async {
-              await _db.updateStatus(package.id, next);
-              if(context.mounted) {
-                Navigator.pop(context);
-              }
-              _showSnackBar("Statut mis à jour !");
-              _resume();
-            },
-            child: const Text(
-              "CONFIRMER",
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _resume() {
-    _controller.start();
-    if (mounted) setState(() => _isProcessing = false);
   }
 
   void _showSnackBar(String msg, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: isError ? Colors.red : Colors.green,
-      ),
+      SnackBar(content: Text(msg), backgroundColor: isError ? Colors.red : Colors.green),
     );
   }
 }

@@ -38,38 +38,40 @@ class PackageDetailsPage extends StatelessWidget {
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            _buildSection(
-              title: "Destinataire",
-              children: [
-                _infoRow(Icons.person, "Nom Complet", "${package.firstName} ${package.lastName}"),
-                _infoRow(Icons.phone, "Contacts", "${package.phone1}${package.phone2 != null ? ' / ${package.phone2}' : ''}"),
-                _infoRow(Icons.location_city, "Gouvernorat", package.governorate.label),
-                _infoRow(Icons.map, "Adresse", package.address),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _buildSection(
-              title: "Détails du Colis",
-              children: [
-                _infoRow(Icons.payments_outlined, "Montant à collecter", "${package.amount} TND", isHighlight: true),
-                _infoRow(Icons.swap_horiz, "Type", package.isExchange ? "Échange" : "Normal"),
-                _infoRow(Icons.inventory_2_outlined, "Désignation", package.packageDesignation ?? "Non spécifié"),
-                _infoRow(Icons.description_outlined, "Commentaire", package.comment ?? "Aucun"),
-              ],
-            ),
-            const SizedBox(height: 20),
-            _buildSection(
-              title: "Historique",
-              children: [
-                _infoRow(Icons.calendar_month, "Date de création", DateFormat('dd/MM/yyyy HH:mm').format(package.createdAt)),
-                _infoRow(Icons.admin_panel_settings_outlined, "Créé par", package.creatorUsername),
-                _infoRow(Icons.info_outline, "Status actuel", package.status.label),              ],
-            ),
-          ],
+      body: SelectionArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              _buildSection(
+                title: "Destinataire",
+                children: [
+                  _infoRow(Icons.person, "Nom Complet", "${package.firstName} ${package.lastName}"),
+                  _infoRow(Icons.phone, "Contacts", "${package.phone1}${package.phone2 != null ? ' / ${package.phone2}' : ''}"),
+                  _infoRow(Icons.location_city, "Gouvernorat", package.governorate.label),
+                  _infoRow(Icons.map, "Adresse", package.address),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _buildSection(
+                title: "Détails du Colis",
+                children: [
+                  _infoRow(Icons.payments_outlined, "Montant à collecter", "${package.amount} TND", isHighlight: true),
+                  _infoRow(Icons.swap_horiz, "Type", package.isExchange ? "Échange" : "Normal"),
+                  _infoRow(Icons.inventory_2_outlined, "Désignation", package.packageDesignation ?? "Non spécifié"),
+                  _infoRow(Icons.description_outlined, "Commentaire", package.comment ?? "Aucun"),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _buildSection(
+                title: "Historique",
+                children: [
+                  _infoRow(Icons.calendar_month, "Date de création", DateFormat('dd/MM/yyyy HH:mm').format(package.createdAt)),
+                  _infoRow(Icons.admin_panel_settings_outlined, "Créé par", package.creatorUsername),
+                  _infoRow(Icons.info_outline, "Status actuel", package.status.label),              ],
+              ),
+            ],
+          ),
         ),
       ),
     );

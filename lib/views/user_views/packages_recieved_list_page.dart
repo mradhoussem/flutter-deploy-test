@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:delivery_app/firestore/enums/e_packages_status.dart';
 import 'package:delivery_app/firestore/models/m_package.dart';
 import 'package:delivery_app/firestore/package_db.dart';
 import 'package:delivery_app/reusable_widgets/rw_dropdown.dart';
@@ -8,7 +9,6 @@ import 'package:delivery_app/reusable_widgets/rw_textview.dart';
 import 'package:delivery_app/tools/default_colors.dart';
 import 'package:delivery_app/views/user_views/package_item_card.dart';
 import 'package:flutter/material.dart';
-// 1. Import the refresh notifier
 import 'package:delivery_app/tools/refresh_notifier.dart';
 
 class PackagesReceivedListPage extends StatefulWidget {
@@ -37,31 +37,29 @@ class _PackagesReceivedListPageState extends State<PackagesReceivedListPage> {
   bool _isLoading = false;
   bool _hasError = false;
   bool _isDescending = true;
-
-  // 2. Track initialization status
   bool _isInitialized = false;
 
-  static const String _status = "received";
+  // Liste des statuts à afficher sur cette page
+  static const List<EPackageStatus> _statuses = [
+    EPackageStatus.permanentReturn,
+    EPackageStatus.returnReceived
+  ];
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onPhoneTextChanged);
-
-    // 3. Listen for global refresh events (e.g., when a package is added)
     RefreshNotifier().refreshCounter.addListener(_resetAndReload);
   }
 
   @override
   void dispose() {
     _searchController.removeListener(_onPhoneTextChanged);
-    // 4. Clean up listener
     RefreshNotifier().refreshCounter.removeListener(_resetAndReload);
     _searchController.dispose();
     super.dispose();
   }
 
-  // 5. Method to trigger fetch when the page is actually visited
   void initDataIfNeeded() {
     if (!_isInitialized) {
       _fetchPage(1);
@@ -85,7 +83,7 @@ class _PackagesReceivedListPageState extends State<PackagesReceivedListPage> {
   }
 
   String _cacheKey(int page) =>
-      '${_lastPhone ?? ""}|$page|$_isDescending|$_status';
+      '${_lastPhone ?? ""}|$page|$_isDescending|${_statuses.map((e) => e.name).join(',')}';
 
   Future<void> _fetchPage(int page) async {
     if (_isLoading) return;
@@ -118,7 +116,7 @@ class _PackagesReceivedListPageState extends State<PackagesReceivedListPage> {
 
       final snapshot = await _db.getPackagesByUserByStatusPaged(
         userId: widget.userId,
-        status: _status,
+        statuses: _statuses,
         exactPhone: phone.isEmpty ? null : phone,
         startAt: _pageStarts[page - 1],
         limit: 11,
@@ -136,7 +134,6 @@ class _PackagesReceivedListPageState extends State<PackagesReceivedListPage> {
       _cache[key] = _CachedPage(
         packages: items,
         hasMore: hasMore,
-        nextCursor: hasMore ? docs.last : null,
         cachedAt: DateTime.now(),
       );
 
@@ -149,9 +146,7 @@ class _PackagesReceivedListPageState extends State<PackagesReceivedListPage> {
       debugPrint('FIRESTORE ERROR: $e');
       setState(() => _hasError = true);
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -169,7 +164,6 @@ class _PackagesReceivedListPageState extends State<PackagesReceivedListPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 6. Ensure data is fetched if the page is currently visible
     initDataIfNeeded();
 
     return Scaffold(
@@ -242,20 +236,17 @@ class _PackagesReceivedListPageState extends State<PackagesReceivedListPage> {
   }
 
   Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_hasError) {
-      return const Center(child: Text("Erreur de chargement"));
-    }
-    if (_allPackages.isEmpty) {
-      return const EmptyStateWidget();
-    }
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_hasError) return const Center(child: Text("Erreur de chargement"));
+    if (_allPackages.isEmpty) return const EmptyStateWidget();
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: _allPackages.length,
-      itemBuilder: (_, i) => PackageItemCard(package: _allPackages[i]),
+      itemBuilder: (_, i) => PackageItemCard(
+        package: _allPackages[i],
+        showReturnReceivedButton: true, // Affiche le bouton "Retour reçu"
+      ),
     );
   }
 
@@ -319,14 +310,12 @@ class _PackagesReceivedListPageState extends State<PackagesReceivedListPage> {
 class _CachedPage {
   final List<PackageModel> packages;
   final bool hasMore;
-  final DocumentSnapshot? nextCursor;
   final DateTime cachedAt;
 
   const _CachedPage({
     required this.packages,
     required this.hasMore,
     required this.cachedAt,
-    this.nextCursor,
   });
 
   bool get isExpired =>

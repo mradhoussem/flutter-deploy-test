@@ -92,7 +92,7 @@ class _AddPackagePageState extends State<AddPackagePage> {
       );
 
       // ✅ Use the new automated method
-      final docRef = await _db.addPackageWithAutoCost(
+      final docRef = await _db.addPackage(
         package: newPackage,
         userId: userId,
       );

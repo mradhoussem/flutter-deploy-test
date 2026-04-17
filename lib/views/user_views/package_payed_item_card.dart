@@ -23,103 +23,105 @@ class PackagePayedItemCard extends StatelessWidget {
     // Calculation: Net Amount (HT) = Total Amount - Delivery Cost
     final double amountHT = package.amount - package.deliveryCost;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 4,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- TOP SECTION: Info & Status Badge ---
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _buildInfo()),
-                _buildStatusBadge(package.status),
-              ],
-            ),
-
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Divider(height: 1, thickness: 0.5),
-            ),
-
-            // --- ACCOUNTING SECTION (The "Little Table") ---
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Column(
+    return SelectionArea(
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        elevation: 4,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // --- TOP SECTION: Info & Status Badge ---
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildPriceRow("Montant Total", "${package.amount.toStringAsFixed(3)} TND", isBold: true),
-                  const SizedBox(height: 6),
-                  _buildPriceRow("Frais Livraison", "- ${package.deliveryCost.toStringAsFixed(3)} TND", color: Colors.red.shade700),
-                  const Divider(height: 16),
-                  _buildPriceRow(
-                      "Montant Net (HT)",
-                      "${amountHT.toStringAsFixed(3)} TND",
-                      color: Colors.green.shade700,
-                      isLarge: true
-                  ),
+                  Expanded(child: _buildInfo()),
+                  _buildStatusBadge(package.status),
                 ],
               ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // --- BOTTOM SECTION: Action Buttons ---
-            Align(
-              alignment: Alignment.centerRight,
-              child: Wrap(
-                spacing: 4,
-                children: [
-                  // Only allow Edit/Delete if it's still in "waiting"
-                  if (package.status == EPackageStatus.waiting) ...[
+      
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(height: 1, thickness: 0.5),
+              ),
+      
+              // --- ACCOUNTING SECTION (The "Little Table") ---
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    _buildPriceRow("Montant Total", "${package.amount.toStringAsFixed(3)} TND", isBold: true),
+                    const SizedBox(height: 6),
+                    _buildPriceRow("Frais Livraison", "- ${package.deliveryCost.toStringAsFixed(3)} TND", color: Colors.red.shade700),
+                    const Divider(height: 16),
+                    _buildPriceRow(
+                        "Montant Net (HT)",
+                        "${amountHT.toStringAsFixed(3)} TND",
+                        color: Colors.green.shade700,
+                        isLarge: true
+                    ),
+                  ],
+                ),
+              ),
+      
+              const SizedBox(height: 12),
+      
+              // --- BOTTOM SECTION: Action Buttons ---
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  spacing: 4,
+                  children: [
+                    // Only allow Edit/Delete if it's still in "waiting"
+                    if (package.status == EPackageStatus.waiting) ...[
+                      _buildActionButton(
+                        icon: Icons.delete_outline,
+                        color: DefaultColors.error,
+                        tooltip: "Supprimer",
+                        onPressed: () => _confirmDelete(context),
+                      ),
+                      _buildActionButton(
+                        icon: Icons.edit_outlined,
+                        color: Colors.blue,
+                        tooltip: "Editer",
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => UpdatePackagePage(package: package),
+                          ),
+                        ),
+                      ),
+                    ],
                     _buildActionButton(
-                      icon: Icons.delete_outline,
-                      color: DefaultColors.error,
-                      tooltip: "Supprimer",
-                      onPressed: () => _confirmDelete(context),
+                      icon: Icons.print_outlined,
+                      color: Colors.black87,
+                      tooltip: "Imprimer",
+                      onPressed: () => RdPrintSavePackage.show(context, package),
                     ),
                     _buildActionButton(
-                      icon: Icons.edit_outlined,
-                      color: Colors.blue,
-                      tooltip: "Editer",
+                      icon: Icons.visibility_outlined,
+                      color: Colors.black87,
+                      tooltip: "Détails",
                       onPressed: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => UpdatePackagePage(package: package),
+                          builder: (_) => PackageDetailsPage(package: package),
                         ),
                       ),
                     ),
                   ],
-                  _buildActionButton(
-                    icon: Icons.print_outlined,
-                    color: Colors.black87,
-                    tooltip: "Imprimer",
-                    onPressed: () => RdPrintSavePackage.show(context, package),
-                  ),
-                  _buildActionButton(
-                    icon: Icons.visibility_outlined,
-                    color: Colors.black87,
-                    tooltip: "Détails",
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => PackageDetailsPage(package: package),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

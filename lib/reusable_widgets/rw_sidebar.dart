@@ -24,7 +24,7 @@ class RwSideBar extends StatelessWidget {
     required this.backgroundColor,
     required this.items,
     this.unselectedColor = Colors.grey,
-    this.portalTitle = "USER PORTAL",
+    this.portalTitle = "PORTAIL EXPÉDITEUR",
   });
 
   @override

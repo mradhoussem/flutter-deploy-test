@@ -2,6 +2,7 @@ import 'package:delivery_app/firestore/models/m_user.dart';
 import 'package:delivery_app/firestore/user_db.dart';
 import 'package:delivery_app/tools/default_colors.dart';
 import 'package:delivery_app/tools/refresh_notifier.dart';
+import 'package:delivery_app/views/admin_views/add_user_page.dart';
 import 'package:delivery_app/views/admin_views/edit_password_page.dart';
 import 'package:flutter/material.dart';
 
@@ -64,10 +65,13 @@ class _UsersViewPageState extends State<UsersViewPage> {
       // Let AdminHomePage handle the background
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: DefaultColors.primary,
-        onPressed: () => Navigator.pushNamed(context, '/addUser'),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => AddUserPage()),
+        ),
         icon: const Icon(Icons.person_add_alt_1, color: Colors.white),
         label: const Text(
-          "NOUVEAU COMPTE",
+          "NOUVEAU expéditeur",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
@@ -98,7 +102,6 @@ class _UsersViewPageState extends State<UsersViewPage> {
             "Gestion des Utilisateurs",
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
-
         ],
       ),
     );
@@ -111,44 +114,48 @@ class _UsersViewPageState extends State<UsersViewPage> {
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final user = _users![index];
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: ListTile(
-            onTap: () => _showUserDetails(context, user),
-            leading: CircleAvatar(
-              backgroundColor: DefaultColors.primary.withValues(alpha: 0.1),
-              child: Text(
-                user.username.isNotEmpty ? user.username[0].toUpperCase() : "?",
-                style: const TextStyle(
-                  color: DefaultColors.primary,
-                  fontWeight: FontWeight.bold,
+        return SelectionArea(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ListTile(
+              onTap: () => _showUserDetails(context, user),
+              leading: CircleAvatar(
+                backgroundColor: DefaultColors.primary.withValues(alpha: 0.1),
+                child: Text(
+                  user.username.isNotEmpty
+                      ? user.username[0].toUpperCase()
+                      : "?",
+                  style: const TextStyle(
+                    color: DefaultColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            title: Text(
-              "${user.firstName} ${user.lastName}",
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text("@${user.username} • ${user.phone1}"),
-            trailing: IconButton(
-              tooltip: "Réinitialiser mot de passe",
-              icon: const Icon(Icons.lock_reset, color: Colors.grey),
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => EditPasswordPage(
-                    userId: user.id,
-                    userName: user.username,
+              title: Text(
+                "${user.firstName} ${user.lastName}",
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text("@${user.username} • ${user.phone1}"),
+              trailing: IconButton(
+                tooltip: "Réinitialiser mot de passe",
+                icon: const Icon(Icons.lock_reset, color: Colors.grey),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => EditPasswordPage(
+                      userId: user.id,
+                      userName: user.username,
+                    ),
                   ),
                 ),
               ),

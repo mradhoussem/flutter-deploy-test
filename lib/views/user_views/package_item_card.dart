@@ -10,109 +10,177 @@ import 'package:flutter/material.dart';
 
 class PackageItemCard extends StatelessWidget {
   final PackageModel package;
-  final bool showSender; // New Parameter
+  final bool showSender;
+  final bool showReturnReceivedButton; // Nouveau paramètre
 
   const PackageItemCard({
     super.key,
     required this.package,
-    this.showSender = false, // Defaulted to false
+    this.showSender = false,
+    this.showReturnReceivedButton = false, // Par défaut false
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 4,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- TOP SECTION: Info & Status Badge ---
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _buildInfo()),
-                _buildStatusBadge(package.status),
-              ],
-            ),
-
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Divider(height: 1, thickness: 0.5),
-            ),
-
-            SizedBox(
-              width: double.infinity,
-              child: Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                runAlignment: WrapAlignment.end,
-                spacing: 20,
-                runSpacing: 12,
+    return SelectionArea(
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        elevation: 4,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- Price Display ---
-                  Text(
-                    "${package.amount} TND",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 18,
-                      color: DefaultColors.primary,
+                  Expanded(child: _buildInfo()),
+                  _buildStatusBadge(package.status),
+                ],
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(height: 1, thickness: 0.5),
+              ),
+              SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  runAlignment: WrapAlignment.end,
+                  spacing: 20,
+                  runSpacing: 12,
+                  children: [
+                    Text(
+                      "${package.amount} TND",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                        color: DefaultColors.primary,
+                      ),
                     ),
-                  ),
+                    Wrap(
+                      alignment: WrapAlignment.end,
+                      spacing: 4,
+                      children: [
+                        // ✅ Bouton spécifique "Retour reçu"
+                        if (showReturnReceivedButton &&
+                            package.status == EPackageStatus.permanentReturn)
+                          OutlinedButton.icon(
+                            onPressed: () async {
+                              // Affichage de la boîte de dialogue de confirmation
+                              final bool? confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text("Confirmer la réception"),
+                                  content: const Text(
+                                    "Voulez-vous marquer ce retour comme reçu ?",
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, false),
+                                      child: const Text(
+                                        "ANNULER",
+                                        style: TextStyle(color: Colors.black54),
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(context, true),
+                                      child: const Text(
+                                        "CONFIRMER",
+                                        style: TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
 
-                  // --- Action Buttons Container ---
-                  Wrap(
-                    alignment: WrapAlignment.end,
-                    spacing: 4,
-                    children: [
-                      if (package.status == EPackageStatus.waiting) ...[
+                              // Si l'utilisateur a confirmé, on exécute la mise à jour
+                              if (confirm == true) {
+                                await PackageDB().updateStatus(
+                                  package.id,
+                                  EPackageStatus.returnReceived,
+                                );
+                                RefreshNotifier().notifyRefresh();
+                              }
+                            },
+                            icon: const Icon(
+                              Icons.assignment_turned_in_outlined,
+                              size: 20,
+                            ),
+                            label: const Text(
+                              "RETOUR REÇU",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.green.shade700,
+                              backgroundColor: Colors.green.shade50,
+                              side: BorderSide(color: Colors.green.shade300),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                            ),
+                          ),
+                        if (package.status == EPackageStatus.waiting) ...[
+                          _buildActionButton(
+                            icon: Icons.delete_outline,
+                            color: DefaultColors.error,
+                            tooltip: "Supprimer",
+                            onPressed: () => _confirmDelete(context),
+                          ),
+                          _buildActionButton(
+                            icon: Icons.edit_outlined,
+                            color: Colors.blue,
+                            tooltip: "Editer",
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    UpdatePackagePage(package: package),
+                              ),
+                            ),
+                          ),
+                        ],
                         _buildActionButton(
-                          icon: Icons.delete_outline,
-                          color: DefaultColors.error,
-                          tooltip: "Supprimer",
-                          onPressed: () => _confirmDelete(context),
+                          icon: Icons.print_outlined,
+                          color: Colors.black87,
+                          tooltip: "Imprimer",
+                          onPressed: () =>
+                              RdPrintSavePackage.show(context, package),
                         ),
                         _buildActionButton(
-                          icon: Icons.edit_outlined,
-                          color: Colors.blue,
-                          tooltip: "Editer",
+                          icon: Icons.visibility_outlined,
+                          color: Colors.black87,
+                          tooltip: "Détails",
                           onPressed: () => Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) =>
-                                  UpdatePackagePage(package: package),
+                                  PackageDetailsPage(package: package),
                             ),
                           ),
                         ),
                       ],
-                      _buildActionButton(
-                        icon: Icons.print_outlined,
-                        color: Colors.black87,
-                        tooltip: "Imprimer",
-                        onPressed: () =>
-                            RdPrintSavePackage.show(context, package),
-                      ),
-                      _buildActionButton(
-                        icon: Icons.visibility_outlined,
-                        color: Colors.black87,
-                        tooltip: "Détails",
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                PackageDetailsPage(package: package),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -122,7 +190,6 @@ class PackageItemCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- Added: Expéditeur Section (Conditional) ---
         if (showSender) ...[
           Row(
             children: [
@@ -144,7 +211,6 @@ class PackageItemCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
         ],
-
         Text(
           "${package.firstName} ${package.lastName}",
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
@@ -195,7 +261,6 @@ class PackageItemCard extends StatelessWidget {
 
   Widget _buildStatusBadge(EPackageStatus status) {
     final Color baseColor = status.gradientColors.first;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -208,13 +273,11 @@ class PackageItemCard extends StatelessWidget {
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,
-          color: baseColor, // Text matches the status color
+          color: baseColor,
         ),
       ),
     );
   }
-
-  // --- LOGIC ---
 
   Future<void> _confirmDelete(BuildContext context) async {
     final bool? confirm = await showDialog<bool>(
@@ -240,7 +303,6 @@ class PackageItemCard extends StatelessWidget {
         ],
       ),
     );
-
     if (confirm == true) {
       await PackageDB().deletePackage(package.id);
       RefreshNotifier().notifyRefresh();

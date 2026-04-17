@@ -226,47 +226,49 @@ class _PackagesPayedListPageState extends State<PackagesPayedListPage> {
     final delivery = _monthlyTotals?['totalDelivery'] ?? 0.0;
     final net = _monthlyTotals?['net'] ?? 0.0;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Text(
-              "RÉCAPITULATIF : $_selectedMonth $_selectedYear",
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-                color: Colors.blueGrey,
+    return SelectionArea(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+      
+        ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                "RÉCAPITULATIF : $_selectedMonth $_selectedYear",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: Colors.blueGrey,
+                ),
               ),
             ),
-          ),
-          Table(
-            border: TableBorder.symmetric(
-              inside: BorderSide(color: Colors.grey.shade400, width: 1),
-                outside: BorderSide(color: Colors.grey.shade400, width: 1),
+            Table(
+              border: TableBorder.symmetric(
+                inside: BorderSide(color: Colors.grey.shade400, width: 1),
+                  outside: BorderSide(color: Colors.grey.shade400, width: 1),
+              ),
+              children: [
+                _buildTableRow("Total Colis", "$count", isBold: true),
+                _buildTableRow("Contre remboursement", total.toStringAsFixed(3)),
+                _buildTableRow(
+                  "Livraison",
+                  "- ${delivery.toStringAsFixed(3)}",
+                  valueColor: Colors.red,
+                ),
+                _buildTableRow(
+                  "Net",
+                  net.toStringAsFixed(3),
+                  valueColor: Colors.green,
+                  isLast: true,
+                ),
+              ],
             ),
-            children: [
-              _buildTableRow("Total Colis", "$count", isBold: true),
-              _buildTableRow("Contre remboursement", total.toStringAsFixed(3)),
-              _buildTableRow(
-                "Livraison",
-                "- ${delivery.toStringAsFixed(3)}",
-                valueColor: Colors.red,
-              ),
-              _buildTableRow(
-                "Net",
-                net.toStringAsFixed(3),
-                valueColor: Colors.green,
-                isLast: true,
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

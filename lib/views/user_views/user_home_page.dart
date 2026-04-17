@@ -140,7 +140,7 @@ class _UserHomePageState extends State<UserHomePage> {
       items: items,
       primaryColor: DefaultColors.primary,
       backgroundColor: Colors.white,
-      portalTitle: "USER PORTAL",
+      portalTitle: "",
       onItemSelected: (index) {
         setState(() {
           _selectedIndex = index;

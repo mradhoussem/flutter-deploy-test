@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:delivery_app/firestore/enums/e_packages_status.dart';
 import 'package:delivery_app/firestore/models/m_package.dart';
 import 'package:delivery_app/firestore/models/m_user.dart';
 import 'package:flutter/foundation.dart';
@@ -10,26 +11,29 @@ class PackageDB {
   CollectionReference<PackageModel> get _packageRef => _db
       .collection(_collection)
       .withConverter<PackageModel>(
-    fromFirestore: (snapshot, _) =>
-        PackageModel.fromMap(snapshot.data()!, snapshot.id),
-    toFirestore: (package, _) => package.toMap(),
-  );
+        fromFirestore: (snapshot, _) =>
+            PackageModel.fromMap(snapshot.data()!, snapshot.id),
+        toFirestore: (package, _) => package.toMap(),
+      );
 
   /// ✅ NEW: Automatically fetches the user's specific delivery cost and saves the package
-  Future<DocumentReference> addPackageWithAutoCost({
+  Future<DocumentReference> addPackage({
     required PackageModel package,
     required String userId,
   }) async {
     try {
-      DocumentSnapshot userDoc = await _db.collection('users').doc(userId).get();
+      DocumentSnapshot userDoc = await _db
+          .collection('users')
+          .doc(userId)
+          .get();
 
       if (!userDoc.exists) {
         throw Exception("Configuration utilisateur introuvable.");
       }
 
       final user = UserModel.fromMap(
-          userDoc.data() as Map<String, dynamic>,
-          id: userDoc.id
+        userDoc.data() as Map<String, dynamic>,
+        id: userDoc.id,
       );
 
       final finalPackage = package.copyWith(
@@ -54,12 +58,17 @@ class PackageDB {
     bool descending = false,
   }) async {
     try {
-      Query<PackageModel> query = _packageRef.where('creatorUserId', isEqualTo: userId);
+      Query<PackageModel> query = _packageRef.where(
+        'creatorUserId',
+        isEqualTo: userId,
+      );
       if (exactPhone != null && exactPhone.isNotEmpty) {
-        query = query.where(Filter.or(
-          Filter('phone1', isEqualTo: exactPhone),
-          Filter('phone2', isEqualTo: exactPhone),
-        ));
+        query = query.where(
+          Filter.or(
+            Filter('phone1', isEqualTo: exactPhone),
+            Filter('phone2', isEqualTo: exactPhone),
+          ),
+        );
       }
       query = query.orderBy('createdAt', descending: descending);
       if (startAt != null) query = query.startAfterDocument(startAt);
@@ -71,19 +80,27 @@ class PackageDB {
 
   Future<QuerySnapshot<PackageModel>> getPackagesByUserByStatusPaged({
     required String userId,
-    required String status,
+    required List<EPackageStatus> statuses, // Changé de EPackageStatus à List
     String? exactPhone,
     DocumentSnapshot? startAt,
     int limit = 10,
     bool descending = true,
   }) async {
     try {
-      Query<PackageModel> query = _packageRef.where('creatorUserId', isEqualTo: userId).where('status', isEqualTo: status);
+      // Conversion de la liste d'enums en liste de Strings pour Firestore
+      List<String> statusNames = statuses.map((e) => e.name).toList();
+
+      Query<PackageModel> query = _packageRef
+          .where('creatorUserId', isEqualTo: userId)
+          .where('status', whereIn: statusNames); // Utilisation de whereIn
+
       if (exactPhone != null && exactPhone.isNotEmpty) {
-        query = query.where(Filter.or(
-          Filter('phone1', isEqualTo: exactPhone),
-          Filter('phone2', isEqualTo: exactPhone),
-        ));
+        query = query.where(
+          Filter.or(
+            Filter('phone1', isEqualTo: exactPhone),
+            Filter('phone2', isEqualTo: exactPhone),
+          ),
+        );
       }
       query = query.orderBy('createdAt', descending: descending);
       if (startAt != null) query = query.startAfterDocument(startAt);
@@ -103,15 +120,20 @@ class PackageDB {
     try {
       Query<PackageModel> query = _packageRef;
       if (searchPhone != null && searchPhone.isNotEmpty) {
-        query = query.where(Filter.or(
-          Filter('phone1', isEqualTo: searchPhone),
-          Filter('phone2', isEqualTo: searchPhone),
-        ));
+        query = query.where(
+          Filter.or(
+            Filter('phone1', isEqualTo: searchPhone),
+            Filter('phone2', isEqualTo: searchPhone),
+          ),
+        );
       }
       if (searchUsername != null && searchUsername.isNotEmpty) {
         query = query
             .where('creatorUsername', isGreaterThanOrEqualTo: searchUsername)
-            .where('creatorUsername', isLessThanOrEqualTo: '$searchUsername\uf8ff')
+            .where(
+              'creatorUsername',
+              isLessThanOrEqualTo: '$searchUsername\uf8ff',
+            )
             .orderBy('creatorUsername');
       }
       query = query.orderBy('createdAt', descending: descending);
@@ -131,12 +153,16 @@ class PackageDB {
   }) async {
     try {
       Query<PackageModel> query = _packageRef;
-      if (status != null && status != "ALL") query = query.where('status', isEqualTo: status);
+      if (status != null && status != "ALL") {
+        query = query.where('status', isEqualTo: status);
+      }
       if (exactPhone != null && exactPhone.isNotEmpty) {
-        query = query.where(Filter.or(
-          Filter('phone1', isEqualTo: exactPhone),
-          Filter('phone2', isEqualTo: exactPhone),
-        ));
+        query = query.where(
+          Filter.or(
+            Filter('phone1', isEqualTo: exactPhone),
+            Filter('phone2', isEqualTo: exactPhone),
+          ),
+        );
       }
       query = query.orderBy('createdAt', descending: descending);
       if (startAt != null) query = query.startAfterDocument(startAt);
@@ -148,25 +174,33 @@ class PackageDB {
 
   Future<List<PackageModel>> getAllPackagesByStatus({
     required String userId,
-    required String status,
+    required EPackageStatus status,
     bool descending = false,
   }) async {
     try {
       final snapshot = await _db
           .collection(_collection)
           .where('creatorUserId', isEqualTo: userId)
-          .where('status', isEqualTo: status)
+          .where('status', isEqualTo: status.name)
           .orderBy('createdAt', descending: descending)
           .get();
-      return snapshot.docs.map((doc) => PackageModel.fromMap(doc.data(), doc.id)).toList();
+      return snapshot.docs
+          .map((doc) => PackageModel.fromMap(doc.data(), doc.id))
+          .toList();
     } catch (e) {
       return [];
     }
   }
 
-  Future<int> getPackageCountByStatus({required String userId, String? status}) async {
+  Future<int> getPackageCountByStatus({
+    required String userId,
+    String? status,
+  }) async {
     try {
-      Query<PackageModel> query = _packageRef.where('creatorUserId', isEqualTo: userId);
+      Query<PackageModel> query = _packageRef.where(
+        'creatorUserId',
+        isEqualTo: userId,
+      );
       if (status != null) query = query.where('status', isEqualTo: status);
       final snapshot = await query.count().get();
       return snapshot.count ?? 0;
@@ -175,10 +209,23 @@ class PackageDB {
     }
   }
 
-  Future<DocumentReference> addPackage(PackageModel package) => _packageRef.add(package);
-
-  Future<void> updatePackageFields(String packageId, Map<String, dynamic> data) async {
+  Future<void> updatePackageFields(
+    String packageId,
+    Map<String, dynamic> data,
+  ) async {
     await _db.collection(_collection).doc(packageId).update(data);
+  }
+
+  Future<void> updateStatus(String packageId, EPackageStatus newStatus) async {
+    try {
+      await _db.collection(_collection).doc(packageId).update({
+        'status': newStatus.name,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint("Error updating status: $e");
+      rethrow;
+    }
   }
 
   Future<void> deletePackage(String packageId) async {
@@ -209,8 +256,14 @@ class PackageDB {
       Query<PackageModel> query = _packageRef
           .where('creatorUserId', isEqualTo: userId)
           .where('status', isEqualTo: 'payed')
-          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-          .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth))
+          .where(
+            'createdAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
+          )
+          .where(
+            'createdAt',
+            isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth),
+          )
           .orderBy('createdAt', descending: descending);
 
       if (startAt != null) query = query.startAfterDocument(startAt);
@@ -235,8 +288,14 @@ class PackageDB {
       final snapshot = await _packageRef
           .where('creatorUserId', isEqualTo: userId)
           .where('status', isEqualTo: 'payed')
-          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
-          .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth))
+          .where(
+            'createdAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth),
+          )
+          .where(
+            'createdAt',
+            isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth),
+          )
           .get();
 
       double totalAmount = 0;
@@ -262,8 +321,18 @@ class PackageDB {
 
   int _getMonthNumber(String monthName) {
     final months = [
-      "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-      "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
+      "Janvier",
+      "Février",
+      "Mars",
+      "Avril",
+      "Mai",
+      "Juin",
+      "Juillet",
+      "Août",
+      "Septembre",
+      "Octobre",
+      "Novembre",
+      "Décembre",
     ];
     return months.indexOf(monthName) + 1;
   }

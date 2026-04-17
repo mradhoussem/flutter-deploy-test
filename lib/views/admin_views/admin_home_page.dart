@@ -3,6 +3,7 @@ import 'package:delivery_app/reusable_widgets/rw_sidebar.dart';
 import 'package:delivery_app/tools/default_colors.dart';
 import 'package:delivery_app/reusable_widgets/rw_sidebar_item.dart';
 import 'package:delivery_app/views/admin_views/packages_admin_page.dart';
+import 'package:delivery_app/views/admin_views/scanner_admin_page.dart';
 import 'package:delivery_app/views/admin_views/users_view_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,7 +29,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
   @override
   void initState() {
     super.initState();
-    _activatedPages = List.generate(3, (index) => index == 0);
+    _activatedPages = List.generate(4, (index) => index == 0);
     _initAdmin();
   }
 
@@ -66,9 +67,9 @@ class _AdminHomePageState extends State<AdminHomePage> {
         page: const UsersViewPage(),
       ),
       RwSideBarItem(
-        title: "Paramètres",
-        icon: Icons.settings,
-        page: const Center(child: Text("Paramètres Admin")),
+        title: "Confirmer Statut",
+        icon: Icons.qr_code_2,
+        page: const AdminScannerPage(),
       ),
     ];
   }
@@ -124,7 +125,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
 
   Widget _buildSidebar(List<RwSideBarItem> items) {
     return RwSideBar(
-      portalTitle: "ADMIN PORTAL",
+      portalTitle: "PORTAIL ADMIN",
       selectedIndex: _selectedIndex,
       items: items,
       primaryColor: Colors.white,

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:delivery_app/dialogs/rd_print_save_waiting_package.dart';
+import 'package:delivery_app/firestore/enums/e_packages_status.dart';
 import 'package:delivery_app/firestore/models/m_package.dart';
 import 'package:delivery_app/firestore/package_db.dart';
 import 'package:delivery_app/init/loading_overlay.dart';
@@ -45,7 +46,7 @@ class _PackagesWaitingListPageState extends State<PackagesWaitingListPage> {
   // 2. Track if data has been initialized
   bool _isInitialized = false;
 
-  static const String _status = "waiting";
+  static const EPackageStatus _status = EPackageStatus.waiting;
 
   @override
   void initState() {
@@ -116,7 +117,7 @@ class _PackagesWaitingListPageState extends State<PackagesWaitingListPage> {
 
       final snapshot = await _db.getPackagesByUserByStatusPaged(
         userId: widget.userId,
-        status: _status,
+        statuses: [_status],
         exactPhone: phone.isEmpty ? null : phone,
         startAt: _pageStarts[page - 1],
         limit: 11,

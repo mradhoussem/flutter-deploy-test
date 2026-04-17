@@ -194,18 +194,21 @@ class PackageItemCard extends StatelessWidget {
   }
 
   Widget _buildStatusBadge(EPackageStatus status) {
+    final Color baseColor = status.gradientColors.first;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: DefaultColors.primary.withValues(alpha: 0.1),
+        color: baseColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: baseColor.withValues(alpha: 0.2), width: 1),
       ),
       child: Text(
         status.label.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,
-          color: DefaultColors.primary,
+          color: baseColor, // Text matches the status color
         ),
       ),
     );

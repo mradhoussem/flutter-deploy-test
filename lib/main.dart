@@ -1,7 +1,6 @@
 import 'package:delivery_app/auth_security/user_guard.dart';
 import 'package:delivery_app/login/login_admin_page.dart';
 import 'package:delivery_app/tools/default_colors.dart';
-import 'package:delivery_app/views/admin_views/add_user_page.dart';
 import 'package:delivery_app/views/admin_views/admin_home_page.dart';
 import 'package:delivery_app/views/user_views/user_home_page.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -55,7 +54,6 @@ class MyApp extends StatelessWidget {
         '/loginAdmin': (context) => const LoginAdminPage(),
         '/Home': (context) => const UserGuard(child: UserHomePage()),
         '/adminHome': (context) => const AdminGuard(child: AdminHomePage()),
-        '/addUser': (context) => const AdminGuard(child: AddUserPage()),
         '/userHomePage': (context) => const UserGuard(child: UserHomePage()),
       },
     );

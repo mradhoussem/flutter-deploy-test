@@ -139,8 +139,8 @@ class _LoginPageState extends State<LoginPage> {
                     Padding(
                       padding: const EdgeInsets.all(20),
                       child: Image.asset(
-                        ImagesFiles.backgroundCar,
-                        width: isMobile ? 300 : 600,
+                        ImagesFiles.logo,
+                        width: isMobile ? 250 : 500,
                         fit: BoxFit.contain,
                       ),
                     ),

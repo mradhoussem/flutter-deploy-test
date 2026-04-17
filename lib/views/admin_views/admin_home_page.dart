@@ -18,7 +18,9 @@ class _AdminHomePageState extends State<AdminHomePage> {
   int _selectedIndex = 0;
   bool _isSidebarOpen = true;
 
-  // NEW: Track which pages have been visited to avoid loading everything at once
+  // null = still loading, true = ready to show content
+  bool? _isReady;
+
   late List<bool> _activatedPages;
 
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -26,14 +28,26 @@ class _AdminHomePageState extends State<AdminHomePage> {
   @override
   void initState() {
     super.initState();
-    // We have 3 items in the sidebar. Index 0 is active by default.
-    _activatedPages = [true, false, false];
+    _activatedPages = List.generate(3, (index) => index == 0);
+    _initAdmin();
+  }
+
+  Future<void> _initAdmin() async {
+    // This async gap mirrors _loadUserInfo() in UserHomePage.
+    // It ensures the first build() sees _isReady == null,
+    // so IndexedStack is not constructed until _isReady flips to true.
+    // Without this, _buildItems() returns real widgets on the very first
+    // build(), and any later setState recreates them — causing blank pages.
+    final prefs = await SharedPreferences.getInstance();
+    final bool loggedIn = prefs.getBool('is_admin_logged_in') ?? false;
+    if (mounted) {
+      setState(() => _isReady = loggedIn);
+    }
   }
 
   Future<void> _handleLogout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_admin_logged_in', false);
-
     if (mounted) {
       Navigator.pushReplacementNamed(context, '/loginAdmin');
     }
@@ -62,6 +76,9 @@ class _AdminHomePageState extends State<AdminHomePage> {
   @override
   Widget build(BuildContext context) {
     final bool isWeb = MediaQuery.of(context).size.width > 900;
+
+    // Same local variable used for both drawer and body —
+    // guarantees both get the exact same widget instances in one frame.
     final items = _buildItems();
 
     return Scaffold(
@@ -86,10 +103,11 @@ class _AdminHomePageState extends State<AdminHomePage> {
                   },
                 ),
                 Expanded(
-                  child: IndexedStack(
+                  child: _isReady == null
+                      ? const Center(child: CircularProgressIndicator())
+                      : IndexedStack(
                     index: _selectedIndex,
                     children: items.asMap().entries.map((entry) {
-                      // Optimization: If not activated yet, show empty box
                       return _activatedPages[entry.key]
                           ? entry.value.page
                           : const SizedBox.shrink();
@@ -110,19 +128,13 @@ class _AdminHomePageState extends State<AdminHomePage> {
       selectedIndex: _selectedIndex,
       items: items,
       primaryColor: Colors.white,
-      // Standard admin theme
-      backgroundColor: DefaultColors.primary,
+      backgroundColor: DefaultColors.accent,
       unselectedColor: Colors.white70,
       onItemSelected: (index) {
         setState(() {
           _selectedIndex = index;
-          _activatedPages[index] = true; // Activate the page on first visit
+          _activatedPages[index] = true;
         });
-
-        // Close drawer automatically on mobile
-        if (MediaQuery.of(context).size.width <= 900) {
-          _scaffoldKey.currentState?.closeDrawer();
-        }
       },
       onLogout: _handleLogout,
     );

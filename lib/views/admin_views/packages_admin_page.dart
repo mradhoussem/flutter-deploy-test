@@ -139,7 +139,7 @@ class _PackagesAdminPageState extends State<PackagesAdminPage> {
         children: [
           RwTextview(
             controller: _userSearchController,
-            label: "Nom de l'Utilisateur / Boutique",
+            label: "Nom de l'éxpediteur",
             prefixIcon: Icons.storefront,
           ),
           const SizedBox(height: 10),

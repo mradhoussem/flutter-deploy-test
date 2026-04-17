@@ -1,4 +1,5 @@
 import 'package:delivery_app/reusable_widgets/rw_sidebar_item.dart';
+import 'package:delivery_app/tools/images_files.dart';
 import 'package:flutter/material.dart';
 
 class RwSideBar extends StatelessWidget {
@@ -46,7 +47,13 @@ class RwSideBar extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 40),
+          const SizedBox(height: 20),
+
+          Image.asset(
+            ImagesFiles.logo2,
+            width: 120, // Slightly larger for the splash screen
+          ),
+          const SizedBox(height: 20),
 
           _buildNavItems(context),
 

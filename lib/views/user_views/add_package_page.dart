@@ -8,7 +8,6 @@ import 'package:delivery_app/reusable_widgets/rw_textview.dart';
 import 'package:delivery_app/tools/default_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// 1. Import the refresh notifier
 import 'package:delivery_app/tools/refresh_notifier.dart';
 
 class AddPackagePage extends StatefulWidget {
@@ -62,6 +61,8 @@ class _AddPackagePageState extends State<AddPackagePage> {
         throw Exception('Session expirée.');
       }
 
+      // Create the draft model.
+      // deliveryCost is 0.0 here, but addPackageWithAutoCost will fetch the correct one.
       final newPackage = PackageModel(
         id: '',
         firstName: _fNameController.text.trim(),
@@ -75,6 +76,8 @@ class _AddPackagePageState extends State<AddPackagePage> {
         amount: double.parse(
           _amountController.text.trim().replaceAll(',', '.'),
         ),
+        deliveryCost: 0.0,
+        // <--- Placeholder
         isExchange: _isExchange,
         packageDesignation: _isExchange
             ? _designationController.text.trim()
@@ -88,14 +91,19 @@ class _AddPackagePageState extends State<AddPackagePage> {
         creatorUsername: username,
       );
 
-      final docRef = await _db.addPackage(newPackage);
+      // ✅ Use the new automated method
+      final docRef = await _db.addPackageWithAutoCost(
+        package: newPackage,
+        userId: userId,
+      );
+
+      // Re-fetch or copy with the real ID for the dialog
       final savedPackage = newPackage.copyWith(id: docRef.id);
 
       if (mounted) {
-        // 2. Trigger the global refresh event
         RefreshNotifier().notifyRefresh();
-
         setState(() => _isLoading = false);
+
         RdPrintSavePackage.show(
           context,
           savedPackage,
@@ -113,6 +121,8 @@ class _AddPackagePageState extends State<AddPackagePage> {
       }
     }
   }
+
+  // --- Build UI (Unchanged but included for completeness) ---
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +154,6 @@ class _AddPackagePageState extends State<AddPackagePage> {
                       prefixIcon: Icons.person_outline,
                       iconColor: DefaultColors.primary,
                       validator: (v) => v!.isEmpty ? 'Requis' : null,
-                      maxLength: 200,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -155,7 +164,6 @@ class _AddPackagePageState extends State<AddPackagePage> {
                       prefixIcon: Icons.person,
                       iconColor: DefaultColors.primary,
                       validator: (v) => v!.isEmpty ? 'Requis' : null,
-                      maxLength: 200,
                     ),
                   ),
                 ],
@@ -179,7 +187,6 @@ class _AddPackagePageState extends State<AddPackagePage> {
                 prefixIcon: Icons.phone_android,
                 iconColor: DefaultColors.primary,
                 maxLength: 8,
-                minLength: 8,
               ),
               const SizedBox(height: 30),
               _buildSectionTitle('LIVRAISON'),
@@ -187,7 +194,7 @@ class _AddPackagePageState extends State<AddPackagePage> {
                 value: _selectedGov,
                 items: EGovernorate.values.map((e) => e.name).toList(),
                 itemLabelBuilder: (name) =>
-                EGovernorateExtension.fromName(name).label,
+                    EGovernorateExtension.fromName(name).label,
                 onChanged: (val) => setState(() => _selectedGov = val),
               ),
               const SizedBox(height: 15),
@@ -197,7 +204,6 @@ class _AddPackagePageState extends State<AddPackagePage> {
                 prefixIcon: Icons.location_on_outlined,
                 iconColor: DefaultColors.primary,
                 validator: (v) => v!.isEmpty ? 'Requis' : null,
-                maxLength: 500,
               ),
               const SizedBox(height: 15),
               RwTextview(
@@ -207,7 +213,6 @@ class _AddPackagePageState extends State<AddPackagePage> {
                 prefixIcon: Icons.payments_outlined,
                 iconColor: DefaultColors.primary,
                 validator: (v) => v!.isEmpty ? 'Requis' : null,
-                maxLength: 20,
               ),
               const SizedBox(height: 25),
               _buildExchangeSection(),
@@ -217,7 +222,6 @@ class _AddPackagePageState extends State<AddPackagePage> {
                 hint: 'Remarque',
                 prefixIcon: Icons.textsms_outlined,
                 iconColor: DefaultColors.primary,
-                maxLength: 1000,
               ),
               const SizedBox(height: 40),
               _buildSubmitButton(),
@@ -271,7 +275,6 @@ class _AddPackagePageState extends State<AddPackagePage> {
                 prefixIcon: Icons.inventory_2_outlined,
                 iconColor: DefaultColors.primary,
                 validator: (v) => (_isExchange && v!.isEmpty) ? 'Requis' : null,
-                maxLength: 1000,
               ),
             ),
         ],
@@ -295,9 +298,9 @@ class _AddPackagePageState extends State<AddPackagePage> {
         child: _isLoading
             ? const CircularProgressIndicator(color: Colors.white)
             : const Text(
-          "CONFIRMER L'EXPÉDITION",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
+                "CONFIRMER L'EXPÉDITION",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
       ),
     );
   }

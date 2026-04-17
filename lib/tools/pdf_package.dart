@@ -29,9 +29,9 @@ class PdfPackage {
 
     final pdf = pw.Document(title: 'colis_${package.id}');
 
-    final titleStyle = pw.TextStyle(font: ttfBold, fontSize: 10);
-    final labelStyle = pw.TextStyle(font: ttfBold, fontSize: 5);
-    final valueStyle = pw.TextStyle(font: ttfRegular, fontSize: 5);
+    final titleStyle = pw.TextStyle(font: ttfBold, fontSize: 9);
+    final labelStyle = pw.TextStyle(font: ttfBold, fontSize: 4);
+    final valueStyle = pw.TextStyle(font: ttfRegular, fontSize: 4);
 
     pw.TableRow buildRow(String label, String value) {
       return pw.TableRow(

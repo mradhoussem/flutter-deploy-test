@@ -199,10 +199,10 @@ class _LoginAdminPageState extends State<LoginAdminPage> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(30),
                       child: Image.asset(
-                        ImagesFiles.backgroundCar2,
-                        width: isMobile ? 300 : 450,
+                        ImagesFiles.logo2,
+                        width: isMobile ? 200 : 300,
                         fit: BoxFit.contain,
                       ),
                     ),

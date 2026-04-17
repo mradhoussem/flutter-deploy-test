@@ -55,7 +55,7 @@ class _UserHomePageState extends State<UserHomePage> {
 
     return [
       RwSideBarItem(
-        title: "Dashboard",
+        title: "Tableau de bord",
         icon: Icons.dashboard,
         page: DashboardUserPage(userId: _userid!, username: _username),
       ),

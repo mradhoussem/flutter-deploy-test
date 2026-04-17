@@ -11,6 +11,7 @@ class PackageModel {
   final EGovernorate governorate;
   final String address;
   final double amount;
+  final double deliveryCost; // <--- NEW FIELD
   final bool isExchange;
   final String? packageDesignation;
   final String? comment;
@@ -28,6 +29,7 @@ class PackageModel {
     required this.governorate,
     required this.address,
     required this.amount,
+    required this.deliveryCost, // <--- NEW FIELD
     this.isExchange = false,
     this.packageDesignation,
     this.comment,
@@ -46,6 +48,7 @@ class PackageModel {
     EGovernorate? governorate,
     String? address,
     double? amount,
+    double? deliveryCost, // <--- ADDED
     bool? isExchange,
     String? packageDesignation,
     String? comment,
@@ -63,6 +66,7 @@ class PackageModel {
       governorate: governorate ?? this.governorate,
       address: address ?? this.address,
       amount: amount ?? this.amount,
+      deliveryCost: deliveryCost ?? this.deliveryCost, // <--- ADDED
       isExchange: isExchange ?? this.isExchange,
       packageDesignation: packageDesignation ?? this.packageDesignation,
       comment: comment ?? this.comment,
@@ -73,7 +77,6 @@ class PackageModel {
     );
   }
 
-  /// ✅ SAFE TO FIRESTORE / JSON
   Map<String, dynamic> toMap() {
     return {
       'firstName': firstName,
@@ -83,6 +86,7 @@ class PackageModel {
       'governorate': governorate.name,
       'address': address,
       'amount': amount,
+      'deliveryCost': deliveryCost, // <--- ADDED
       'isExchange': isExchange,
       'packageDesignation': packageDesignation,
       'comment': comment,
@@ -93,7 +97,6 @@ class PackageModel {
     };
   }
 
-  /// ✅ SAFE FROM FIRESTORE OR JSON
   factory PackageModel.fromMap(Map<String, dynamic> data, String id) {
     return PackageModel(
       id: id,
@@ -104,6 +107,7 @@ class PackageModel {
       governorate: EGovernorateExtension.fromName(data['governorate'] ?? ''),
       address: data['address'] ?? '',
       amount: _parseDouble(data['amount']),
+      deliveryCost: _parseDouble(data['deliveryCost']), // <--- ADDED
       isExchange: data['isExchange'] ?? false,
       packageDesignation: data['packageDesignation'],
       comment: data['comment'],
@@ -116,10 +120,6 @@ class PackageModel {
       createdAt: _parseDate(data['createdAt']),
     );
   }
-
-  // ─────────────────────────────
-  // 🔥 SAFE HELPERS
-  // ─────────────────────────────
 
   static double _parseDouble(dynamic value) {
     if (value is int) return value.toDouble();

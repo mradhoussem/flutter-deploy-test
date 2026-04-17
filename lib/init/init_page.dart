@@ -72,7 +72,7 @@ class _InitPageState extends State<InitPage>
             );
           },
           child: Image.asset(
-            ImagesFiles.logo,
+            ImagesFiles.logo2,
             width: 120, // Slightly larger for the splash screen
           ),
         ),

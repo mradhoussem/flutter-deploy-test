@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:delivery_app/firestore/models/m_package.dart';
+import 'package:delivery_app/firestore/models/m_user.dart';
 import 'package:flutter/foundation.dart';
 
 class PackageDB {
@@ -14,6 +15,37 @@ class PackageDB {
     toFirestore: (package, _) => package.toMap(),
   );
 
+  /// ✅ NEW: Automatically fetches the user's specific delivery cost and saves the package
+  Future<DocumentReference> addPackageWithAutoCost({
+    required PackageModel package,
+    required String userId,
+  }) async {
+    try {
+      DocumentSnapshot userDoc = await _db.collection('users').doc(userId).get();
+
+      if (!userDoc.exists) {
+        throw Exception("Configuration utilisateur introuvable.");
+      }
+
+      final user = UserModel.fromMap(
+          userDoc.data() as Map<String, dynamic>,
+          id: userDoc.id
+      );
+
+      final finalPackage = package.copyWith(
+        deliveryCost: user.deliveryCosts,
+        createdAt: DateTime.now(),
+      );
+
+      return await _packageRef.add(finalPackage);
+    } catch (e) {
+      debugPrint("AutoCost Save Error: $e");
+      rethrow;
+    }
+  }
+
+  // --- Existing Methods (RESTORED) ---
+
   Future<QuerySnapshot<PackageModel>> getPackagesByUserPaged({
     required String userId,
     String? exactPhone,
@@ -21,32 +53,18 @@ class PackageDB {
     int limit = 10,
     bool descending = false,
   }) async {
-    debugPrint("getPackagesByUserPaged");
     try {
-      Query<PackageModel> query = _packageRef.where(
-        'creatorUserId',
-        isEqualTo: userId,
-      );
-
+      Query<PackageModel> query = _packageRef.where('creatorUserId', isEqualTo: userId);
       if (exactPhone != null && exactPhone.isNotEmpty) {
-        query = query.where(
-          Filter.or(
-            Filter('phone1', isEqualTo: exactPhone),
-            Filter('phone2', isEqualTo: exactPhone),
-          ),
-        );
+        query = query.where(Filter.or(
+          Filter('phone1', isEqualTo: exactPhone),
+          Filter('phone2', isEqualTo: exactPhone),
+        ));
       }
-
-      // FIX: Use descending directly. Newest (desc) should be true by default.
       query = query.orderBy('createdAt', descending: descending);
-
-      if (startAt != null) {
-        query = query.startAfterDocument(startAt);
-      }
-
+      if (startAt != null) query = query.startAfterDocument(startAt);
       return await query.limit(limit).get();
     } catch (e) {
-      debugPrint("Firestore Database Error: $e");
       rethrow;
     }
   }
@@ -59,34 +77,18 @@ class PackageDB {
     int limit = 10,
     bool descending = true,
   }) async {
-    debugPrint("getPackagesByUserByStatusPaged");
     try {
-      Query<PackageModel> query = _packageRef.where(
-        'creatorUserId',
-        isEqualTo: userId,
-      );
-
-      query = query.where('status', isEqualTo: status);
-
+      Query<PackageModel> query = _packageRef.where('creatorUserId', isEqualTo: userId).where('status', isEqualTo: status);
       if (exactPhone != null && exactPhone.isNotEmpty) {
-        query = query.where(
-          Filter.or(
-            Filter('phone1', isEqualTo: exactPhone),
-            Filter('phone2', isEqualTo: exactPhone),
-          ),
-        );
+        query = query.where(Filter.or(
+          Filter('phone1', isEqualTo: exactPhone),
+          Filter('phone2', isEqualTo: exactPhone),
+        ));
       }
-
-      // FIX: Use descending directly.
       query = query.orderBy('createdAt', descending: descending);
-
-      if (startAt != null) {
-        query = query.startAfterDocument(startAt);
-      }
-
+      if (startAt != null) query = query.startAfterDocument(startAt);
       return await query.limit(limit).get();
     } catch (e) {
-      debugPrint("Firestore Database Error: $e");
       rethrow;
     }
   }
@@ -100,41 +102,22 @@ class PackageDB {
   }) async {
     try {
       Query<PackageModel> query = _packageRef;
-
-      // 1. Filter by Phone (Exact) if provided
       if (searchPhone != null && searchPhone.isNotEmpty) {
-        query = query.where(
-          Filter.or(
-            Filter('phone1', isEqualTo: searchPhone),
-            Filter('phone2', isEqualTo: searchPhone),
-          ),
-        );
+        query = query.where(Filter.or(
+          Filter('phone1', isEqualTo: searchPhone),
+          Filter('phone2', isEqualTo: searchPhone),
+        ));
       }
-
-      // 2. Filter by Username (Prefix) if provided
-      // Chaining this with the phone filter above
       if (searchUsername != null && searchUsername.isNotEmpty) {
         query = query
             .where('creatorUsername', isGreaterThanOrEqualTo: searchUsername)
-            .where('creatorUsername', isLessThanOrEqualTo: '$searchUsername\uf8ff');
+            .where('creatorUsername', isLessThanOrEqualTo: '$searchUsername\uf8ff')
+            .orderBy('creatorUsername');
       }
-
-      // 3. Apply Sorting
-      // Note: If you search by username prefix, Firestore requires
-      // the first orderBy to be the same field (creatorUsername).
-      if (searchUsername != null && searchUsername.isNotEmpty) {
-        query = query.orderBy('creatorUsername');
-      }
-
       query = query.orderBy('createdAt', descending: descending);
-
-      if (startAt != null) {
-        query = query.startAfterDocument(startAt);
-      }
-
+      if (startAt != null) query = query.startAfterDocument(startAt);
       return await query.limit(limit).get();
     } catch (e) {
-      debugPrint("Admin Global Fetch Error: $e");
       rethrow;
     }
   }
@@ -146,33 +129,19 @@ class PackageDB {
     int limit = 10,
     bool descending = false,
   }) async {
-    debugPrint("getAllPackagesPaged");
     try {
       Query<PackageModel> query = _packageRef;
-
-      if (status != null && status != "ALL") {
-        query = query.where('status', isEqualTo: status);
-      }
-
+      if (status != null && status != "ALL") query = query.where('status', isEqualTo: status);
       if (exactPhone != null && exactPhone.isNotEmpty) {
-        query = query.where(
-          Filter.or(
-            Filter('phone1', isEqualTo: exactPhone),
-            Filter('phone2', isEqualTo: exactPhone),
-          ),
-        );
+        query = query.where(Filter.or(
+          Filter('phone1', isEqualTo: exactPhone),
+          Filter('phone2', isEqualTo: exactPhone),
+        ));
       }
-
-      // FIX: Use descending directly and use startAfterDocument
       query = query.orderBy('createdAt', descending: descending);
-
-      if (startAt != null) {
-        query = query.startAfterDocument(startAt);
-      }
-
+      if (startAt != null) query = query.startAfterDocument(startAt);
       return await query.limit(limit).get();
     } catch (e) {
-      debugPrint("Firestore Error: $e");
       rethrow;
     }
   }
@@ -182,55 +151,33 @@ class PackageDB {
     required String status,
     bool descending = false,
   }) async {
-    debugPrint("getAllPackagesByStatus");
     try {
       final snapshot = await _db
           .collection(_collection)
           .where('creatorUserId', isEqualTo: userId)
           .where('status', isEqualTo: status)
-          .orderBy('createdAt', descending: descending) // FIX: Use descending directly
+          .orderBy('createdAt', descending: descending)
           .get();
-
-      return snapshot.docs
-          .map((doc) => PackageModel.fromMap(doc.data(), doc.id))
-          .toList();
+      return snapshot.docs.map((doc) => PackageModel.fromMap(doc.data(), doc.id)).toList();
     } catch (e) {
-      debugPrint("getAllPackagesByStatus ERROR: $e");
       return [];
     }
   }
 
-  Future<int> getPackageCountByStatus({
-    required String userId,
-    String? status,
-  }) async {
-    debugPrint("getPackageCountByStatus");
+  Future<int> getPackageCountByStatus({required String userId, String? status}) async {
     try {
-      Query<PackageModel> query = _packageRef.where(
-        'creatorUserId',
-        isEqualTo: userId,
-      );
-
-      if (status != null) {
-        query = query.where('status', isEqualTo: status);
-      }
-
-      final aggregateQuery = query.count();
-      final snapshot = await aggregateQuery.get();
+      Query<PackageModel> query = _packageRef.where('creatorUserId', isEqualTo: userId);
+      if (status != null) query = query.where('status', isEqualTo: status);
+      final snapshot = await query.count().get();
       return snapshot.count ?? 0;
     } catch (e) {
-      debugPrint("Firestore Count Error: $e");
       return 0;
     }
   }
 
-  Future<DocumentReference> addPackage(PackageModel package) =>
-      _packageRef.add(package);
+  Future<DocumentReference> addPackage(PackageModel package) => _packageRef.add(package);
 
-  Future<void> updatePackageFields(
-      String packageId,
-      Map<String, dynamic> data,
-      ) async {
+  Future<void> updatePackageFields(String packageId, Map<String, dynamic> data) async {
     await _db.collection(_collection).doc(packageId).update(data);
   }
 
@@ -241,5 +188,83 @@ class PackageDB {
   Future<PackageModel?> getPackageById(String packageId) async {
     final doc = await _packageRef.doc(packageId).get();
     return doc.data();
+  }
+
+  /// ✅ NEW: Fetches paid packages filtered by year and month strings
+  Future<QuerySnapshot<PackageModel>> getPaidPackagesByDatePaged({
+    required String userId,
+    required String yearStr,
+    required String monthStr,
+    DocumentSnapshot? startAt,
+    int limit = 11,
+    bool descending = true,
+  }) async {
+    try {
+      int year = int.parse(yearStr);
+      int month = _getMonthNumber(monthStr);
+
+      final DateTime startOfMonth = DateTime(year, month, 1);
+      final DateTime endOfMonth = DateTime(year, month + 1, 0, 23, 59, 59);
+
+      Query<PackageModel> query = _packageRef
+          .where('creatorUserId', isEqualTo: userId)
+          .where('status', isEqualTo: 'payed')
+          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+          .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth))
+          .orderBy('createdAt', descending: descending);
+
+      if (startAt != null) query = query.startAfterDocument(startAt);
+      return await query.limit(limit).get();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, double>> getPaidTotalsByMonth({
+    required String userId,
+    required String yearStr,
+    required String monthStr,
+  }) async {
+    try {
+      int year = int.parse(yearStr);
+      int month = _getMonthNumber(monthStr);
+
+      final DateTime startOfMonth = DateTime(year, month, 1);
+      final DateTime endOfMonth = DateTime(year, month + 1, 0, 23, 59, 59);
+
+      final snapshot = await _packageRef
+          .where('creatorUserId', isEqualTo: userId)
+          .where('status', isEqualTo: 'payed')
+          .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfMonth))
+          .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(endOfMonth))
+          .get();
+
+      double totalAmount = 0;
+      double totalDelivery = 0;
+      int count = snapshot.docs.length;
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        totalAmount += data.amount;
+        totalDelivery += data.deliveryCost;
+      }
+
+      return {
+        'count': count.toDouble(),
+        'totalAmount': totalAmount,
+        'totalDelivery': totalDelivery,
+        'net': totalAmount - totalDelivery,
+      };
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  int _getMonthNumber(String monthName) {
+    final months = [
+      "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+      "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
+    ];
+    return months.indexOf(monthName) + 1;
   }
 }

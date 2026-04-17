@@ -56,7 +56,7 @@ class _PulseLoaderState extends State<_PulseLoader> with SingleTickerProviderSta
           child: ScaleTransition(
             scale: _scaleAnimation,
             child: Image.asset(
-              ImagesFiles.logo,
+              ImagesFiles.logo2,
               width: 80,
             ),
           ),

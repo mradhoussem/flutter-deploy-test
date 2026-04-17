@@ -4,11 +4,9 @@ import 'package:delivery_app/firestore/models/m_package.dart';
 import 'package:delivery_app/firestore/package_db.dart';
 import 'package:delivery_app/reusable_widgets/rw_dropdown.dart';
 import 'package:delivery_app/reusable_widgets/rw_empty_packages.dart';
-import 'package:delivery_app/reusable_widgets/rw_textview.dart';
 import 'package:delivery_app/tools/default_colors.dart';
-import 'package:delivery_app/views/user_views/package_item_card.dart';
+import 'package:delivery_app/views/user_views/package_payed_item_card.dart';
 import 'package:flutter/material.dart';
-// 1. Import the refresh notifier
 import 'package:delivery_app/tools/refresh_notifier.dart';
 
 class PackagesPayedListPage extends StatefulWidget {
@@ -17,53 +15,62 @@ class PackagesPayedListPage extends StatefulWidget {
   const PackagesPayedListPage({super.key, required this.userId});
 
   @override
-  State<PackagesPayedListPage> createState() =>
-      _PackagesPayedListPageState();
+  State<PackagesPayedListPage> createState() => _PackagesPayedListPageState();
 }
 
 class _PackagesPayedListPageState extends State<PackagesPayedListPage> {
   final PackageDB _db = PackageDB();
-  final TextEditingController _searchController = TextEditingController();
 
   final Map<String, _CachedPage> _cache = {};
   final List<DocumentSnapshot?> _pageStarts = [null];
-
   List<PackageModel> _allPackages = [];
-  final List<String> _sortOptions = ['décroissant', 'croissant'];
 
-  String? _lastPhone;
+  Map<String, double>? _monthlyTotals;
+  bool _isTotalsLoading = false;
+
+  final List<String> _years = List.generate(
+    5,
+    (index) => (DateTime.now().year - index).toString(),
+  );
+  final List<String> _months = [
+    "Janvier",
+    "Février",
+    "Mars",
+    "Avril",
+    "Mai",
+    "Juin",
+    "Juillet",
+    "Août",
+    "Septembre",
+    "Octobre",
+    "Novembre",
+    "Décembre",
+  ];
+
+  late String _selectedYear;
+  late String _selectedMonth;
+
   int _currentPage = 1;
   bool _hasMore = true;
   bool _isLoading = false;
   bool _hasError = false;
   bool _isDescending = true;
-
-  // 2. Track initialization status
   bool _isInitialized = false;
-
-  static const String _status = "payed";
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_onPhoneTextChanged);
-
-    // 3. Listen for global refresh events
+    _selectedYear = DateTime.now().year.toString();
+    _selectedMonth = _months[DateTime.now().month - 1];
     RefreshNotifier().refreshCounter.addListener(_resetAndReload);
-
-    // fetchPage(1) removed from here
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_onPhoneTextChanged);
-    // 4. Clean up listener
     RefreshNotifier().refreshCounter.removeListener(_resetAndReload);
-    _searchController.dispose();
     super.dispose();
   }
 
-  // 5. Method to trigger fetch when the page is actually visited
   void initDataIfNeeded() {
     if (!_isInitialized) {
       _fetchPage(1);
@@ -71,32 +78,12 @@ class _PackagesPayedListPageState extends State<PackagesPayedListPage> {
     }
   }
 
-  void _onPhoneTextChanged() {
-    final text = _searchController.text.trim();
-    if (text.isEmpty && _lastPhone != null && _lastPhone!.isNotEmpty) {
-      _lastPhone = '';
-      _resetAndReload();
-    }
-  }
-
-  void _onSearchPressed() {
-    final phone = _searchController.text.trim();
-    if (phone == (_lastPhone ?? '')) return;
-    _lastPhone = phone;
-    _resetAndReload();
-  }
-
   String _cacheKey(int page) =>
-      '${_lastPhone ?? ""}|$page|$_isDescending|$_status';
+      '$_selectedYear|$_selectedMonth|$page|$_isDescending';
 
   Future<void> _fetchPage(int page) async {
     if (_isLoading) return;
-
-    final connectivity = await Connectivity().checkConnectivity();
-    if (connectivity.contains(ConnectivityResult.none)) {
-      setState(() => _hasError = true);
-      return;
-    }
+    if (_monthlyTotals == null) _loadMonthlyTotals();
 
     final key = _cacheKey(page);
     if (_cache.containsKey(key) && !_cache[key]!.isExpired) {
@@ -110,18 +97,22 @@ class _PackagesPayedListPageState extends State<PackagesPayedListPage> {
       return;
     }
 
+    final connectivity = await Connectivity().checkConnectivity();
+    if (connectivity.contains(ConnectivityResult.none)) {
+      setState(() => _hasError = true);
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _hasError = false;
     });
 
     try {
-      final phone = _searchController.text.trim();
-
-      final snapshot = await _db.getPackagesByUserByStatusPaged(
+      final snapshot = await _db.getPaidPackagesByDatePaged(
         userId: widget.userId,
-        status: _status,
-        exactPhone: phone.isEmpty ? null : phone,
+        yearStr: _selectedYear,
+        monthStr: _selectedMonth,
         startAt: _pageStarts[page - 1],
         limit: 11,
         descending: _isDescending,
@@ -147,12 +138,25 @@ class _PackagesPayedListPageState extends State<PackagesPayedListPage> {
         _currentPage = page;
       });
     } catch (e) {
-      debugPrint('FIRESTORE ERROR: $e');
       setState(() => _hasError = true);
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadMonthlyTotals() async {
+    setState(() => _isTotalsLoading = true);
+    try {
+      final totals = await _db.getPaidTotalsByMonth(
+        userId: widget.userId,
+        yearStr: _selectedYear,
+        monthStr: _selectedMonth,
+      );
+      if (mounted) setState(() => _monthlyTotals = totals);
+    } catch (e) {
+      debugPrint("Error loading totals: $e");
+    } finally {
+      if (mounted) setState(() => _isTotalsLoading = false);
     }
   }
 
@@ -163,26 +167,144 @@ class _PackagesPayedListPageState extends State<PackagesPayedListPage> {
       _pageStarts.clear();
       _pageStarts.add(null);
       _currentPage = 1;
-      _hasError = false;
+      _monthlyTotals = null;
     });
     _fetchPage(1);
   }
 
   @override
   Widget build(BuildContext context) {
-    // 6. Ensure data is fetched if the page is active
     initDataIfNeeded();
-
     return Scaffold(
       backgroundColor: DefaultColors.pagesBackground,
-      body: Column(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // ✅ Seuil pour le mode "Web" ou Ecran Large
+          bool isWideScreen = constraints.maxWidth > 900;
+
+          return Column(
+            children: [
+              if (isWideScreen)
+                // --- MODE WEB : Filtres et Tableau côte à côte ---
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end ,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(flex: 3, child: _buildHeader()),
+                      const SizedBox(width: 20),
+                      Expanded(flex: 2, child: _buildSummaryTable()),
+                    ],
+                  ),
+                )
+              else
+                // --- MODE MOBILE : L'un sous l'autre ---
+                Column(children: [_buildHeader(), _buildSummaryTable()]),
+              const Divider(),
+              Expanded(child: _buildBody()),
+              if (_allPackages.isNotEmpty) _buildPagination(),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSummaryTable() {
+    if (_isTotalsLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: SizedBox(width: 100, child: LinearProgressIndicator()),
+        ),
+      );
+    }
+
+    final count = _monthlyTotals?['count']?.toInt() ?? 0;
+    final total = _monthlyTotals?['totalAmount'] ?? 0.0;
+    final delivery = _monthlyTotals?['totalDelivery'] ?? 0.0;
+    final net = _monthlyTotals?['net'] ?? 0.0;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+
+      ),
+      child: Column(
         children: [
-          _buildHeader(),
-          const Divider(),
-          Expanded(child: _buildBody()),
-          if (_allPackages.isNotEmpty) _buildPagination(),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              "RÉCAPITULATIF : $_selectedMonth $_selectedYear",
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: Colors.blueGrey,
+              ),
+            ),
+          ),
+          Table(
+            border: TableBorder.symmetric(
+              inside: BorderSide(color: Colors.grey.shade400, width: 1),
+                outside: BorderSide(color: Colors.grey.shade400, width: 1),
+            ),
+            children: [
+              _buildTableRow("Total Colis", "$count", isBold: true),
+              _buildTableRow("Contre remboursement", total.toStringAsFixed(3)),
+              _buildTableRow(
+                "Livraison",
+                "- ${delivery.toStringAsFixed(3)}",
+                valueColor: Colors.red,
+              ),
+              _buildTableRow(
+                "Net",
+                net.toStringAsFixed(3),
+                valueColor: Colors.green,
+                isLast: true,
+              ),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  TableRow _buildTableRow(
+    String label,
+    String value, {
+    bool isBold = false,
+    Color? valueColor,
+    bool isLast = false,
+  }) {
+    return TableRow(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: isLast || isBold
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              color: valueColor ?? DefaultColors.textPrimary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -195,45 +317,57 @@ class _PackagesPayedListPageState extends State<PackagesPayedListPage> {
           const Text(
             "Mes paiements",
             style: TextStyle(
-              fontSize: 26,
+              fontSize: 24,
               fontWeight: FontWeight.bold,
               color: DefaultColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
-                child: RwTextview(
-                  controller: _searchController,
-                  backgroundColor: Colors.white,
-                  hint: 'Rechercher Tél 1 ou Tél 2...',
-                  textNumeric: true,
-                  prefixIcon: Icons.phone_iphone,
-                  iconColor: Colors.blue,
-                  maxLength: 12,
+                child: RwDropdown(
+                  label: "Année",
+                  value: _selectedYear,
+                  items: _years,
+                  onChanged: (val) {
+                    if (val != null && val != _selectedYear) {
+                      setState(() => _selectedYear = val);
+                      _resetAndReload();
+                    }
+                  },
                 ),
               ),
-              const SizedBox(width: 8),
-              _iconButton(Icons.search, _onSearchPressed),
+              const SizedBox(width: 10),
+              Expanded(
+                child: RwDropdown(
+                  label: "Mois",
+                  value: _selectedMonth,
+                  items: _months,
+                  onChanged: (val) {
+                    if (val != null && val != _selectedMonth) {
+                      setState(() => _selectedMonth = val);
+                      _resetAndReload();
+                    }
+                  },
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           RwDropdown(
-            label: "Trier par date",
-            prefixIcon: Icons.sort,
-            iconColor: Colors.blueGrey,
+            label: "Trier",
             value: _isDescending ? 'décroissant' : 'croissant',
-            items: _sortOptions,
-            itemLabelBuilder: (val) => val == 'décroissant'
-                ? "Plus récent (Nouveau → Ancien)"
-                : "Plus ancien (Ancien → Nouveau)",
+            items: const ['décroissant', 'croissant'],
+            itemLabelBuilder: (val) =>
+                val == 'décroissant' ? "Plus récent" : "Plus ancien",
             onChanged: (String? newValue) {
-              if (newValue == null) return;
-              final shouldBeDesc = (newValue == 'décroissant');
-              if (shouldBeDesc != _isDescending) {
-                setState(() => _isDescending = shouldBeDesc);
-                _resetAndReload();
+              if (newValue != null) {
+                bool newStatus = (newValue == 'décroissant');
+                if (newStatus != _isDescending) {
+                  setState(() => _isDescending = newStatus);
+                  _resetAndReload();
+                }
               }
             },
           ),
@@ -243,20 +377,14 @@ class _PackagesPayedListPageState extends State<PackagesPayedListPage> {
   }
 
   Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_hasError) {
-      return const Center(child: Text("Erreur de chargement"));
-    }
-    if (_allPackages.isEmpty) {
-      return const EmptyStateWidget();
-    }
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_hasError) return const Center(child: Text("Erreur de chargement"));
+    if (_allPackages.isEmpty) return const EmptyStateWidget();
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: _allPackages.length,
-      itemBuilder: (_, i) => PackageItemCard(package: _allPackages[i]),
+      itemBuilder: (_, i) => PackagePayedItemCard(package: _allPackages[i]),
     );
   }
 
@@ -270,13 +398,12 @@ class _PackagesPayedListPageState extends State<PackagesPayedListPage> {
       child: Row(
         children: [
           SizedBox(
-            width: 120,
+            width: 100,
             child: _currentPage > 1
-                ? TextButton.icon(
-              onPressed: () => _fetchPage(_currentPage - 1),
-              icon: const Icon(Icons.arrow_back_ios, size: 16),
-              label: const Text('Précédent'),
-            )
+                ? TextButton(
+                    onPressed: () => _fetchPage(_currentPage - 1),
+                    child: const Text('Précédent'),
+                  )
                 : null,
           ),
           Expanded(
@@ -287,31 +414,15 @@ class _PackagesPayedListPageState extends State<PackagesPayedListPage> {
             ),
           ),
           SizedBox(
-            width: 120,
+            width: 100,
             child: _hasMore
-                ? TextButton.icon(
-              onPressed: () => _fetchPage(_currentPage + 1),
-              icon: const Icon(Icons.arrow_forward_ios, size: 16),
-              label: const Text('Suivant'),
-            )
+                ? TextButton(
+                    onPressed: () => _fetchPage(_currentPage + 1),
+                    child: const Text('Suivant'),
+                  )
                 : null,
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _iconButton(IconData icon, VoidCallback onTap) {
-    return Container(
-      height: 50,
-      width: 50,
-      decoration: BoxDecoration(
-        color: DefaultColors.primary,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: Colors.white),
-        onPressed: onTap,
       ),
     );
   }
@@ -322,7 +433,7 @@ class _CachedPage {
   final bool hasMore;
   final DateTime cachedAt;
 
-  const _CachedPage({
+  _CachedPage({
     required this.packages,
     required this.hasMore,
     required this.cachedAt,

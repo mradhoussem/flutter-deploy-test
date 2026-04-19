@@ -13,9 +13,12 @@ class AdminDB {
     required String email,
     required String password,
   }) async {
+    // Convert email to lowercase for case-insensitive login
+    final String normalizedEmail = email.toLowerCase();
+
     final query = await _db
         .collection('admin_users')
-        .where('email', isEqualTo: email)
+        .where('email', isEqualTo: normalizedEmail)
         .where('password', isEqualTo: _hashPassword(password))
         .limit(1)
         .get();

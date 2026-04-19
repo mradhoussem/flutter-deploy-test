@@ -5,7 +5,6 @@ import 'package:delivery_app/tools/images_files.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -23,7 +22,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    // Prioritize checking for Admin first, then regular User
     _checkExistingAdminSession().then((isAdmin) {
       if (!isAdmin) {
         _checkExistingSession();
@@ -31,7 +29,6 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  /// Checks if an Admin session is active
   Future<bool> _checkExistingAdminSession() async {
     final prefs = await SharedPreferences.getInstance();
     bool isAdminLoggedIn = prefs.getBool('is_admin_logged_in') ?? false;
@@ -43,7 +40,6 @@ class _LoginPageState extends State<LoginPage> {
     return false;
   }
 
-  /// Checks if a regular User session is active
   Future<void> _checkExistingSession() async {
     final prefs = await SharedPreferences.getInstance();
     bool isUserLoggedIn = prefs.getBool('is_user_logged_in') ?? false;
@@ -53,8 +49,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  /// Handles the User (Sender) Authentication
-  // Update the function to use { } for named parameters
   Future<void> _handleUserLogin({
     required String username,
     required String password,
@@ -66,10 +60,9 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final UserDB userRepo = UserDB();
 
-      // Query database
       final user = await userRepo.loginUser(
         username: username,
-        password: password, // Send raw password string
+        password: password,
       );
 
       if (user != null) {
@@ -136,7 +129,6 @@ class _LoginPageState extends State<LoginPage> {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   alignment: WrapAlignment.center,
                   children: [
-                    // Image Section
                     Padding(
                       padding: const EdgeInsets.all(20),
                       child: Image.asset(
@@ -145,16 +137,12 @@ class _LoginPageState extends State<LoginPage> {
                         fit: BoxFit.contain,
                       ),
                     ),
-
-                    // Login Card
                     Padding(
                       padding: const EdgeInsets.all(20),
                       child: Card(
                         color: DefaultColors.background,
                         elevation: 5,
-                        shadowColor: DefaultColors.primary.withValues(
-                          alpha: 0.3,
-                        ),
+                        shadowColor: DefaultColors.primary.withValues(alpha: 0.3),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -179,28 +167,24 @@ class _LoginPageState extends State<LoginPage> {
                                   controller: _usernameController,
                                   hint: 'Identifiant',
                                   prefixIcon: Icons.person_outline,
-                                  validator: (v) =>
-                                      v!.isEmpty ? "Identifiant requis" : null,
+                                  validator: (v) => v!.isEmpty ? "Identifiant requis" : null,
                                 ),
                                 const SizedBox(height: 15),
                                 RwTextview(
                                   controller: _passwordController,
                                   hint: "Mot de passe",
                                   isPassword: true,
-                                  validator: (v) =>
-                                      v!.isEmpty ? "Mot de passe requis" : null,
-                                  onSubmitted: (_) =>
-                                      _validateAndSubmit(), // Trigger on Enter
+                                  validator: (v) => v!.isEmpty ? "Mot de passe requis" : null,
+                                  onSubmitted: (_) => _validateAndSubmit(),
                                 ),
                                 const SizedBox(height: 30),
                                 GestureDetector(
                                   onTap: _isLoading
                                       ? null
                                       : () => _handleUserLogin(
-                                          username: _usernameController.text
-                                              .trim(),
-                                          password: _passwordController.text,
-                                        ),
+                                    username: _usernameController.text.trim(),
+                                    password: _passwordController.text,
+                                  ),
                                   child: Container(
                                     width: double.infinity,
                                     height: 60,
@@ -208,16 +192,13 @@ class _LoginPageState extends State<LoginPage> {
                                       borderRadius: BorderRadius.circular(20),
                                       gradient: LinearGradient(
                                         colors: [
-                                          DefaultColors.primary.withValues(
-                                            alpha: 0.7,
-                                          ),
+                                          DefaultColors.primary.withValues(alpha: 0.7),
                                           DefaultColors.primary,
                                         ],
                                       ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: DefaultColors.primary
-                                              .withValues(alpha: 0.4),
+                                          color: DefaultColors.primary.withValues(alpha: 0.4),
                                           offset: const Offset(6, 6),
                                           blurRadius: 20,
                                         ),
@@ -226,21 +207,21 @@ class _LoginPageState extends State<LoginPage> {
                                     child: Center(
                                       child: _isLoading
                                           ? const SizedBox(
-                                              width: 24,
-                                              height: 24,
-                                              child: CircularProgressIndicator(
-                                                color: Colors.white,
-                                                strokeWidth: 2,
-                                              ),
-                                            )
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
                                           : const Text(
-                                              "SE CONNECTER",
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                letterSpacing: 1.5,
-                                              ),
-                                            ),
+                                        "SE CONNECTER",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -251,10 +232,7 @@ class _LoginPageState extends State<LoginPage> {
                                     const Text("Accès réservé ? "),
                                     Flexible(
                                       child: TextButton(
-                                        onPressed: () => Navigator.pushNamed(
-                                          context,
-                                          '/loginAdmin',
-                                        ),
+                                        onPressed: () => Navigator.pushNamed(context, '/loginAdmin'),
                                         child: const Text(
                                           "Session administrateur",
                                           style: TextStyle(

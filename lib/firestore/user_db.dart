@@ -16,10 +16,12 @@ class UserDB {
     required String password,
   }) async {
     final String hashedInput = _hashPassword(password);
+    // Convert to lowercase for case-insensitive login
+    final String normalizedUsername = username.toLowerCase();
 
     final query = await _db
         .collection('users')
-        .where('username', isEqualTo: username)
+        .where('username', isEqualTo: normalizedUsername)
         .where('password', isEqualTo: hashedInput)
         .limit(1)
         .get();
@@ -42,6 +44,8 @@ class UserDB {
 
   Future<void> addUser(UserModel user, String rawPassword) async {
     Map<String, dynamic> data = user.toMap();
+    // Normalize username to lowercase before saving
+    data['username'] = user.username.toLowerCase();
     data['password'] = _hashPassword(rawPassword);
     await _db.collection('users').add(data);
   }
@@ -54,9 +58,11 @@ class UserDB {
   }
 
   Future<bool> checkUsernameExists(String username) async {
+    // Convert to lowercase to check against stored lowercase usernames
+    final String normalizedUsername = username.toLowerCase();
     final query = await _db
         .collection('users')
-        .where('username', isEqualTo: username)
+        .where('username', isEqualTo: normalizedUsername)
         .get();
     return query.docs.isNotEmpty;
   }
